@@ -17,7 +17,14 @@ from tqdm import tqdm
 
 import bk.compute
 
-global session, path, rat, day, n_channels
+#### Remi imports : 
+from pathlib import Path
+from typing import Union, Optional,Tuple, Dict, Sequence
+from numpy.typing import ArrayLike
+from settings import upath
+
+
+
 
 
 def sessions(base_folder = None):
@@ -27,84 +34,77 @@ def sessions(base_folder = None):
         return pd.read_csv(base_folder)
 
 
-def current_session(path_local="Z:\Rat08\Rat08-20130713"):
-    # Author : BK 08/20
-    # Input Path to the session to load
-    # output : True if loading was done correctly
-    # Variable are stored in global variables.
 
-    # Create Global variable that allow for all function to know in wich session we are this usefull only for variable that are going to be recurentyly used.
-    # Do not overuse this functionnality as it can add inconstansies.
+def session(base_folder:Optional[Union[str,Path]] = upath['base_folder'], 
+            local_path:Optional[Union[str,Path]] = upath['example_session'],
+            byrat:Optional[int] = None,
+            byday:Optional[int] = None) -> dict:
+    """
+    This function load metadata of session and return dict with informations
 
-    session_index = pd.read_csv(
-        "Z:/All-Rats/Billel/session_indexing.csv", sep=";")
+    Parameters
+    ----------
+    base_folder : Union[str,Path], optional
+        Root folder of dataset, by default upath['base_folder']
+    local_path : Union[str,Path], optional
+        relative path to a session, by default upath['example_session']
+    byrat : Optional[int], optional
+        If wanted number of the rat, overide local_path, by default None
+    byday : Optional[int], optional
+        If wanted day of recording, overide local_path, by default None
 
-    path = path_local
-    os.chdir(path)
+    Returns
+    -------
+    dict
+        rat,day,session_path,session_name,n_channels
+        metadata of the currently loaded session. 
+    """
+    base_folder = Path(base_folder)
+    local_path = Path(local_path)
+    session_path = base_folder/local_path
+    session_name = session_path.name
 
-    session = path.split("\\")[2]
-    rat = session_index["Rat"][session_index["Path"] == path].values[0]
-    day = session_index["Day"][session_index["Path"] == path].values[0]
-    n_channels = xml()["nChannels"]
-
-    print("Rat : " + str(int(rat)) + " on day : " + str(int(day)))
-    print("Working with session " + session + " @ " + path)
-
-    print(path)
-
-    return True
-
-
-def current_session_linux(
-    base_folder="/mnt/electrophy/Gabrielle/GG-Dataset-Light/", local_path="Rat08/Rat08-20130713",byrat = None,byday = None
-):
-    # Author : BK 08/20
-    # Input Path to the session to load
-    # output : True if loading was done correctly
-    # Variable are stored in global variables.
-
-    # Create Global variable that allow for all function to know in wich session we are this usefull only for variable that are going to be recurentyly used. Do not overuse this functionnality as it can add inconstansies.
-    global base, session, path, rat, day, n_channels
-    base = base_folder
-
-    os.chdir(base)
-    session_index = pd.read_csv("relative_session_indexing.csv")
-
-    if byrat and byday:
+    session_index = pd.read_csv(base_folder/"relative_session_indexing.csv")
+    
+    if byrat is not None and byday is not None:
         rat = byrat
         day = byday
-        local_path = str(session_index[(session_index.Rat == rat) & (session_index.Day == day)].Path.values[0])
+        local_path = Path(session_index[(session_index.Rat == rat) & (session_index.Day == day)].Path.values[0])
     else:
-        
-        rat = session_index["Rat"][session_index["Path"] == local_path].values[0]
-        day = session_index["Day"][session_index["Path"] == local_path].values[0]
+        rat = session_index["Rat"][session_index["Path"] == local_path.as_posix()].values[0]
+        day = session_index["Day"][session_index["Path"] == local_path.as_posix()].values[0]
+
+
+  
+    n_channels = get_n_channels(session_path / (session_name + '.xml'))
+
+    print(f'Rat : {rat} on day : {day}')
+    print(f'Working with session {session_name} @ {session_path}')
+
+
+    session_metadata = {
+                        'rat':rat,
+                        'day':day,
+                        'session_path':session_path,
+                        'sesssion_name':session_name,
+                        'n_channels':n_channels
+                        }
+
+    return session_metadata
+
+
+def get_n_channels(xml_path):
+    xml_path = Path(xml_path)
+    if not xml_path.exists():
+        return -1
     
-    session = local_path.split("/")[-1]
-    path = os.path.join(base, local_path)
-    os.chdir(path)
-    
-    if os.path.exists(session+'xml'): 
-        n_channels = xml()["nChannels"]
-
-    print("Rat : " + str(int(rat)) + " on day : " + str(int(day)))
-    print("Working with session " + session + " @ " + path)
-
-    return True
-
-
-def xml():
-    os.chdir(path)
-    tree = ET.parse(session + ".xml")
+    tree = ET.parse(xml_path)
     root = tree.getroot()
+    elements = root.findall('.//nChannels')
 
-    xmlInfo = {}
-    for elem in root:
-        for subelem in elem:
-            try:
-                xmlInfo.update({subelem.tag: int(subelem.text)})
-            except:
-                pass
-    return xmlInfo
+    if len(elements) == 0: 
+        return -1
+    return int(elements[0].text)
 
 
 def batch(func, *args, local_base='/mnt/electrophy/Gabrielle/GG-Dataset-Light', verbose=False, **kwargs):
@@ -160,19 +160,35 @@ def batch(func, *args, local_base='/mnt/electrophy/Gabrielle/GG-Dataset-Light', 
     return output_dict, metadata_all
 
 
-def intervals(name):
-    if not name.endswith('.csv'):
-        name = name+'.csv'
+def intervals(md:dict,name:Union[str,Path],discard:Sequence[str]) -> Dict[str,nts.IntervalSet]:
+    """
+    Load already computed intervals
 
-    df = pd.read_csv(f'Intervals/{name}')
-    if len(np.unique(df['state'])) == 1:
-        return(nts.IntervalSet(df['start'],df['end']))
-    else:
-        intervals = {}
-        for state in np.unique(df['state']):
-            filt = df['state'] == state
-            intervals.update({state:nts.IntervalSet(df[filt]['start'],df['end'][filt])})
-        return intervals
+    Parameters
+    ----------
+    md : dict
+        As return from :py:func:`session`
+    name : Union[str,Path]
+        Path of the intervals to be loaded
+    discard :
+        State to be discarded before returning Dict
+
+    Returns
+    -------
+    Dict[str,nts.IntervalSet]
+        Intervals as intervals. Keys are states. 
+    """
+    interval_path = md['session_path']/name
+    interval_path = interval_path.with_suffix('.csv')
+    # FIXME : WAKE_HOMECAGE ?
+    df = pd.read_csv(interval_path)
+    intervals = {}
+    for state in np.unique(df['state']):
+        if state in discard:
+            continue
+        filt = df['state'] == state
+        intervals[state] = nts.IntervalSet(df[filt]['start'],df['end'][filt])
+    return intervals
 
 def analysis(name):
     if (not name.endswith('.npy') or (not name.endswith('.npz'))):
@@ -342,6 +358,7 @@ def state_vector():
     return states
 
 
+
 def states(new_names = False):
     # BK : 17/09/2020
     # Return a dict with variable from States.
@@ -445,8 +462,21 @@ def laps():
     return laps
 
 
-def spikes():
-    return loadSpikeData(path)
+def spikes(metadata:dict)-> Tuple[ArrayLike,pd.DataFrame]:
+    """
+    
+
+    Parameters
+    ----------
+    metadata : dict
+        As return from :py:func:`session`
+
+    Returns
+    -------
+    Tuple[ArrayLike,pd.DataFrame]
+        _description_
+    """
+    return loadSpikeData(metadata['session_path'])
 
 
 
@@ -473,21 +503,19 @@ def loadSpikeData(path, index=None, fs=20000):
 
     #     try session:
     #     except: print('Did you load a session first?')
+    path = Path(path)
 
-    if not os.path.exists(path):
-        print("The path " + path + " doesn't exist; Exiting ...")
-        sys.exit()
-    if os.path.exists(path + "//" + session + "-neurons.npy"):
+    if not path.exists():
+        raise FileNotFoundError(f'Path {path} does not exist')
+    neurons_path = path/f'{path.name}-neurons.npy'
+    metadata_path = path/f'{path.name}-metadata.npy'
+    if neurons_path.exists():
         print("Data already saved in Numpy format, loading them from here:")
-        print(session + "-neurons.npy")
-        neurons = np.load(path + "//" + session +
-                          "-neurons.npy", allow_pickle=True)
-        print(session + "-metadata.npy")
-        shanks = np.load(path + "//" + session +
-                         "-metadata.npy", allow_pickle=True)
-        shanks = pd.DataFrame(
-            shanks, columns=["Rat", "Day", "Shank", "Id", "Region", "Type"]
-        )
+        print(path.name + "-neurons.npy")
+        neurons = np.load(neurons_path, allow_pickle=True)
+        print(path.name + "-metadata.npy")
+        shanks = np.load(metadata_path, allow_pickle=True)
+        shanks = pd.DataFrame(shanks, columns=["Rat", "Day", "Shank", "Id", "Region", "Type"])
         return neurons, shanks
 
     files = os.listdir(path)

@@ -4,7 +4,6 @@ import neuroseries as nts
 from tqdm import tqdm
 import os
 import scipy.stats
-import bk.loadold
 import pandas as pd
 import itertools as it
 
