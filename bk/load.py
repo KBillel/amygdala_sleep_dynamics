@@ -23,18 +23,6 @@ from typing import Union, Optional,Tuple, Dict, Sequence
 from numpy.typing import ArrayLike
 from settings import upath
 
-
-
-
-
-def sessions(base_folder = None):
-    if base_folder is None:
-        return pd.read_csv(base+"/relative_session_indexing.csv", sep=",")
-    else:
-        return pd.read_csv(base_folder)
-
-
-
 def session(base_folder:Optional[Union[str,Path]] = upath['base_folder'], 
             local_path:Optional[Union[str,Path]] = upath['example_session'],
             byrat:Optional[int] = None,
@@ -93,7 +81,22 @@ def session(base_folder:Optional[Union[str,Path]] = upath['base_folder'],
     return session_metadata
 
 
-def get_n_channels(xml_path):
+
+
+def get_n_channels(xml_path:Path)->int:
+    """
+    Look for number of channels in the LFP files using the xml file provided
+
+    Parameters
+    ----------
+    xml_path : Path
+        Path to the XML file of the session
+
+    Returns
+    -------
+    int
+        number of channel in the lfp file
+    """
     xml_path = Path(xml_path)
     if not xml_path.exists():
         return -1
@@ -105,6 +108,77 @@ def get_n_channels(xml_path):
     if len(elements) == 0: 
         return -1
     return int(elements[0].text)
+
+def spikes(metadata:dict)-> Tuple[ArrayLike,pd.DataFrame]:
+    """
+    Parameters
+    ----------
+    metadata : dict
+        As return from :py:func:`session`
+
+    Returns
+    -------
+    Tuple[ArrayLike,pd.DataFrame]
+    """
+    return loadSpikeData(metadata['session_path'])
+
+
+def intervals(metadata:dict,name:Union[str,Path],discard:Optional[Sequence[str]] = None) -> Dict[str,nts.IntervalSet]:
+    """
+    Load already computed intervals
+
+    Parameters
+    ----------
+    metadata : dict
+        As return from :py:func:`session`
+    name : Union[str,Path]
+        Path of the intervals to be loaded
+    discard : Optional[Sequence[str]] defautl None
+        State to be discarded before returning Dict
+
+    Returns
+    -------
+    Dict[str,nts.IntervalSet]
+        Intervals as intervals. Keys are states. 
+    """
+
+    if discard is None : 
+        discard = ()
+
+    interval_path = metadata['session_path']/name
+    interval_path = interval_path.with_suffix('.csv')
+    # FIXME : WAKE_HOMECAGE ?
+    df = pd.read_csv(interval_path)
+    intervals = {}
+    for state in np.unique(df['state']):
+        if state in discard:
+            continue
+        filt = df['state'] == state
+        intervals[state] = nts.IntervalSet(df[filt]['start'],df['end'][filt])
+    return intervals
+
+def homecage(metadata:dict)->nts.IntervalSet:
+    """
+    Concatenate PRE and POST Sleep from exp.csv to return homecage times
+
+    Parameters
+    ----------
+    metadata : dict
+        As return from :py:func:`session`
+
+    Returns
+    -------
+    homecage:nts.Intervals
+        Intervals when the animal was in the Homecage
+    """
+    exp_intervals = intervals(metadata,'Intervals/exp')
+    exp_intervals = {k:v for k,v in exp_intervals.items() if 'sleep' in k.lower()}
+    
+    homecage_intervals = nts.IntervalSet(0,0)
+    for sleep_intervals in exp_intervals.values():
+        homecage_intervals = homecage_intervals.union(sleep_intervals)
+
+    return homecage_intervals.drop_short_intervals(1,'us').reset_index(drop = True)
 
 
 def batch(func, *args, local_base='/mnt/electrophy/Gabrielle/GG-Dataset-Light', verbose=False, **kwargs):
@@ -160,35 +234,7 @@ def batch(func, *args, local_base='/mnt/electrophy/Gabrielle/GG-Dataset-Light', 
     return output_dict, metadata_all
 
 
-def intervals(md:dict,name:Union[str,Path],discard:Sequence[str]) -> Dict[str,nts.IntervalSet]:
-    """
-    Load already computed intervals
 
-    Parameters
-    ----------
-    md : dict
-        As return from :py:func:`session`
-    name : Union[str,Path]
-        Path of the intervals to be loaded
-    discard :
-        State to be discarded before returning Dict
-
-    Returns
-    -------
-    Dict[str,nts.IntervalSet]
-        Intervals as intervals. Keys are states. 
-    """
-    interval_path = md['session_path']/name
-    interval_path = interval_path.with_suffix('.csv')
-    # FIXME : WAKE_HOMECAGE ?
-    df = pd.read_csv(interval_path)
-    intervals = {}
-    for state in np.unique(df['state']):
-        if state in discard:
-            continue
-        filt = df['state'] == state
-        intervals[state] = nts.IntervalSet(df[filt]['start'],df['end'][filt])
-    return intervals
 
 def analysis(name):
     if (not name.endswith('.npy') or (not name.endswith('.npz'))):
@@ -359,49 +405,54 @@ def state_vector():
 
 
 
-def states(new_names = False):
-    # BK : 17/09/2020
-    # Return a dict with variable from States.
-    #     if session_path == 0 : session_path = get_session_path(session_name)
-    states = scipy.io.loadmat(path + "/States.mat")
+# def states(new_names = False):
+#     # BK : 17/09/2020
+#     # Return a dict with variable from States.
+#     #     if session_path == 0 : session_path = get_session_path(session_name)
+#     states = scipy.io.loadmat(path + "/States.mat")
 
-    useless = ["__header__", "__version__", "__globals__"]
-    for u in useless:
-        del states[u]
-    states_ = {}
-    for state in states:
-        states_.update(
-            {
-                state: nts.IntervalSet(
-                    states[state][:, 0], states[state][:, 1], time_units="s"
-                ).drop_short_intervals(1)
-            }
-        )
+#     useless = ["__header__", "__version__", "__globals__"]
+#     for u in useless:
+#         del states[u]
+#     states_ = {}
+#     for state in states:
+#         states_.update(
+#             {
+#                 state: nts.IntervalSet(
+#                     states[state][:, 0], states[state][:, 1], time_units="s"
+#                 ).drop_short_intervals(1)
+#             }
+#         )
 
-    sleep = bk.load.sleep()
-    wake_homecage = states_['wake'].intersect(sleep).drop_short_intervals(1)
-    states_.update({'WAKE_HOMECAGE': wake_homecage})
-    if new_names:
-        states_['NREM'] = states_.pop('sws')
-        states_['REM'] = states_.pop('Rem')
-    return states_
+#     sleep = bk.load.sleep()
+#     wake_homecage = states_['wake'].intersect(sleep).drop_short_intervals(1)
+#     states_.update({'WAKE_HOMECAGE': wake_homecage})
+#     if new_names:
+#         states_['NREM'] = states_.pop('sws')
+#         states_['REM'] = states_.pop('Rem')
+#     return states_
 
 
-def sleep():
-    runs = scipy.io.loadmat("runintervals.mat")["runintervals"]
-    if len(runs) == 3:
-        pre_sleep = nts.IntervalSet(
-            start=runs[0, 1], end=runs[1, 0], time_units="s")
-        post_sleep = nts.IntervalSet(
-            start=runs[1, 1], end=runs[2, 0], time_units="s")
-    elif len(runs) == 1:
-        end = len(lfp(0,memmap=True))/1250
-        pre_sleep = nts.IntervalSet(start = 0,end = runs[0,0],time_units='s')
-        post_sleep = nts.IntervalSet(start = runs[0,1],end = end,time_units='s')
-    intervals = pd.concat((pre_sleep, post_sleep))
-    intervals.index = ['Pre', 'Post']
 
-    return intervals
+    
+    
+
+
+# def sleep():
+#     runs = scipy.io.loadmat("runintervals.mat")["runintervals"]
+#     if len(runs) == 3:
+#         pre_sleep = nts.IntervalSet(
+#             start=runs[0, 1], end=runs[1, 0], time_units="s")
+#         post_sleep = nts.IntervalSet(
+#             start=runs[1, 1], end=runs[2, 0], time_units="s")
+#     elif len(runs) == 1:
+#         end = len(lfp(0,memmap=True))/1250
+#         pre_sleep = nts.IntervalSet(start = 0,end = runs[0,0],time_units='s')
+#         post_sleep = nts.IntervalSet(start = runs[0,1],end = end,time_units='s')
+#     intervals = pd.concat((pre_sleep, post_sleep))
+#     intervals.index = ['Pre', 'Post']
+
+#     return intervals
 
 
 def ripples():
@@ -462,21 +513,7 @@ def laps():
     return laps
 
 
-def spikes(metadata:dict)-> Tuple[ArrayLike,pd.DataFrame]:
-    """
-    
 
-    Parameters
-    ----------
-    metadata : dict
-        As return from :py:func:`session`
-
-    Returns
-    -------
-    Tuple[ArrayLike,pd.DataFrame]
-        _description_
-    """
-    return loadSpikeData(metadata['session_path'])
 
 
 
