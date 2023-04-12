@@ -123,6 +123,22 @@ def spikes(metadata:dict)-> Tuple[ArrayLike,pd.DataFrame]:
     return loadSpikeData(metadata['session_path'])
 
 
+def sleep_scoring(metadata:dict,discard:Optional[Sequence[str]] = None):
+    #TODO Doc string
+    
+    if discard is None:
+        discard = []
+    
+    sleep_scoring_intervals = intervals(metadata,'Intervals/sleep_scoring')
+    
+    homecage_intervals = homecage(metadata)
+    sleep_scoring_intervals['WAKE_HOMECAGE'] = homecage_intervals.intersect(sleep_scoring_intervals['WAKE'])
+
+    for d in discard:
+        sleep_scoring_intervals.pop(d)
+
+    return sleep_scoring_intervals
+
 def intervals(metadata:dict,name:Union[str,Path],discard:Optional[Sequence[str]] = None) -> Dict[str,nts.IntervalSet]:
     """
     Load already computed intervals
@@ -147,14 +163,17 @@ def intervals(metadata:dict,name:Union[str,Path],discard:Optional[Sequence[str]]
 
     interval_path = metadata['session_path']/name
     interval_path = interval_path.with_suffix('.csv')
-    # FIXME : WAKE_HOMECAGE ?
     df = pd.read_csv(interval_path)
+    
+    
     intervals = {}
     for state in np.unique(df['state']):
-        if state in discard:
-            continue
         filt = df['state'] == state
         intervals[state] = nts.IntervalSet(df[filt]['start'],df['end'][filt])
+    
+    for d in discard:
+        intervals.pop(d)
+
     return intervals
 
 def homecage(metadata:dict)->nts.IntervalSet:

@@ -1,5 +1,6 @@
 from bk import load
 from bk import stats
+from bk import compute
 
 import neuroseries as nts
 
@@ -8,6 +9,7 @@ from typing import Union, Optional,Tuple, Dict, Sequence
 from numpy.typing import ArrayLike
 
 import pandas as pd
+import numpy as np
 
 def process_session(base_folder:Union[Path,str],local_path:Union[Path,str],discarded_states:Sequence[str] = ('DROWSY','WAKE'))->pd.DataFrame:
     """
@@ -34,24 +36,15 @@ def process_session(base_folder:Union[Path,str],local_path:Union[Path,str],disca
     md = load.session(base_folder=base_folder,local_path=local_path)
     
     discarded_states = set(discarded_states)
-    wake_useless = False
-    if 'WAKE' in discarded_states:
-        wake_useless = True
-        discarded_states.discard('WAKE')
 
     neurons,metadata = load.spikes(md)
     metadata['SessID'] = metadata.index
 
     id_columns = list(metadata.columns)
 
-    states = load.intervals(md,'Intervals/sleep_scoring.csv',discarded_states)
-    homecage = load.homecage(md)
-    states['WAKE_HOMECAGE'] = homecage.intersect(states['WAKE'])
+    states = load.sleep_scoring(md,discard = discarded_states)
     states['SLEEP'] = states['NREM'].union(states['REM'])
     
-    if wake_useless:
-        states.pop('WAKE')
-
     df_states_fr = states_fr(neurons,metadata,states)
     df_rem_on = rem_on(neurons,metadata,states)
 
@@ -114,7 +107,51 @@ def rem_on(neurons:ArrayLike,metadata:pd.DataFrame,states:Dict[str,nts.IntervalS
     poisson = stats.poisson_test(neurons,states['REM'],states['NREM'])
     return pd.concat((metadata,poisson),axis = 1)
 
+def delta_fr_extended_state(neurons:ArrayLike,
+                            metadata:pd.DataFrame,
+                            states:Dict[str,nts.IntervalSet],
+                            length_compute_fr:int,
+                            sleep_th:int,
+                            wake_th:int)->pd.DataFrame:
+    
+    extended_params = {'sleep':{'sleep_th':60*30,
+                                'wake_th':30,
+                                'sub_states':['NREM','REM']},
+                       'wake':{'sleep_th':30,
+                                'wake_th':60*30,
+                                'sub_states':['WAKE_HOMECAGE']}}
+
+    
+    deltas = {}
+    for state_name,params in extended_params.items():
+        extended_states = compute.extended(states,state_name,params['sleep_th'],params['wake_th'])
+        deltas[state_name] = delta_fr_one_state(neurons, states, length_compute_fr, params, extended_states)
+
+    return deltas
+
+def delta_fr_one_state(neurons, states, length_compute_fr, params, extended_states):
+    deltas = {}
+    for state in params['sub_states']:
+        deltas[state] = []
+        for s, e in extended_states.iloc:
+            current_state = nts.IntervalSet(s, e)
+            state_intervals = states[state].intersect(current_state)
+            act = compute.binSpikes(neurons,1,as_Tsd = True).restrict(state_intervals)
+            act = compute.nts_zscore(act)
+            fr_beg = np.nansum(act.iloc[0:length_compute_fr].values,0)/length_compute_fr
+            fr_end = np.nansum(act.iloc[-length_compute_fr:-1].values,0)/length_compute_fr
+            deltas[state].append(fr_end-fr_beg)
+    
+    return deltas
+
 
 if __name__ == "__main__":
     df = process_session('/mnt/electrophy/Gabrielle/GG-Dataset-Light/','Rat08/Rat08-20130713',('DROWSY','WAKE'))
+    
+    md = load.session()
+    neurons, metadata = load.spikes(md)
+    states = load.sleep_scoring(md)
+
+    
+
     # FIXME : SAVE DATA
