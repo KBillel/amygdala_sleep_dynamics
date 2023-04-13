@@ -23,6 +23,23 @@ from typing import Union, Optional,Tuple, Dict, Sequence
 from numpy.typing import ArrayLike
 from settings import upath
 
+def session_list(base_folder:Optional[Union[str,Path]] = upath['base_folder'])->pd.DataFrame:
+    """
+    Return the list of session that are present in the dataset
+
+    Parameters
+    ----------
+    base_folder : Optional[Union[str,Path]], optional
+        _description_, by default upath['base_folder']
+
+    Returns
+    -------
+    df
+        Rat | Day | Relative Path
+    """
+    session_index = pd.read_csv(base_folder/"relative_session_indexing.csv")
+    return session_index
+
 def session(base_folder:Optional[Union[str,Path]] = upath['base_folder'], 
             local_path:Optional[Union[str,Path]] = upath['example_session'],
             byrat:Optional[int] = None,
