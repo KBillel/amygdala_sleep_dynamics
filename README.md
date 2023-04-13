@@ -15,7 +15,7 @@
   - [ ] ratio FR_REM - FR_NREM / FR_NREM + FR_REM
   - [ ] firing_rates_within_state
   - [ ] firing_rates_at_transitions
-  - [ ] firing_rates_during_extended
+  - [x] firing_rates_during_extended
 - [ ] Network_metrics
   - [ ] Sync
     - [ ] By State
