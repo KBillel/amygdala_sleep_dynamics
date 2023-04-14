@@ -19,7 +19,6 @@ from typing import Union, Optional,Tuple, Dict, Sequence
 from numpy.typing import ArrayLike
 
 
-
 def process_session(base_folder:Union[Path,str]= upath['base_folder'],local_path:Union[Path,str]=upath['example_session'],discarded_states:Sequence[str] = ('DROWSY','WAKE'))->pd.DataFrame:
     """
     Process a session with computation relative to states firing rates
