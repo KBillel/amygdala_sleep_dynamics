@@ -7,13 +7,46 @@ import matplotlib.pyplot as plt
 
 from bk import plot
 
-def average_by_equal_sized_group(df,nbins):
+from typing import Union, Optional,Tuple, Dict, Sequence
+
+def average_by_equal_sized_group(df:pd.DataFrame,nbins:int)->Tuple[pd.DataFrame]:
+    """
+    Average time multi dimentional time series by equal sized groups
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Multi dimential time series
+    nbins : int
+        number of equal size group to be made
+
+    Returns
+    -------
+    Tuple[pd.DataFrame]
+        Times,Average
+    """
     df = df.sort_values('Times')
     df.reset_index(inplace=True)
     df['bin'] = pd.qcut(df.index.values,nbins,range(nbins))
     return df.groupby('bin').mean(numeric_only = True).Times,df.groupby('bin').mean(numeric_only = True).FR,df.groupby('bin').sem(numeric_only = True).FR
 
-def plot_scatter_extended(extended_state,color,ax):
+def plot_scatter_extended(extended_state:list,color:str,ax:Tuple)-> bool:
+    """
+    Scatter plot an extended_state
+
+    Parameters
+    ----------
+    extended_state : list
+        list of extended given by :py:func:`fr_across_extended`
+    color : str
+        Code for color
+    ax : _type_
+        matplotlib axis
+
+    Returns
+    -------
+    
+    """
     df = pd.concat(extended_state,1)
     df['Times'] = df.index.values
 
@@ -48,11 +81,28 @@ def plot_scatter_extended(extended_state,color,ax):
     return False
 
 def plot_delta(ax):
+    """
+    Plot barplot of delta FR beg vs end of extended sleep
+
+    Parameters
+    ----------
+    ax : axis
+        matplotlib axis
+    """
     df = pd.read_csv('processed_data/fr.csv')
     sns.barplot(df[(df.Region == 'BLA') & (df.Type == 'Pyr')],order=['delta_NREM','delta_REM','delta_WAKE_HOMECAGE'],ax = ax)
+    ax.set_ylim(-0.1,0.1)
     plot.forceAspect(ax)
 
-def plot_fr_across_extended(extended):
+def plot_fr_across_extended(extended:Dict[str,list]):
+    """
+    Make figure with scatter of extended + average by same size group + delta
+
+    Parameters
+    ----------
+    extended : Dict[list]
+        given by :py:func:`merge_extended` after running :py:func:`process_all_sessions`
+    """
     fig, ax = plt.subplots(1, 7, figsize=(16, 8))
     plot_scatter_extended(extended['NREM'], 'grey', ax=ax[0:2])
     plot_scatter_extended(extended['REM'], 'orange', ax=ax[2:4])
@@ -60,6 +110,7 @@ def plot_fr_across_extended(extended):
     plot_delta(ax[6])
     plt.tight_layout()
     plt.show()
+    plt.savefig('plots/figures/decrease.svg')
 
 if __name__ == '__main__':
-    print('loaded')
+    plt.style.use('ggplot')

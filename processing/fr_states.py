@@ -327,7 +327,21 @@ def delta_fr_extended_state(neurons:ArrayLike,
             df[f'delta_{substate}'] = np.nanmean(deltas[state][substate],0)
     return pd.concat((metadata,df),axis = 1)
 
-def merge_extended(all_extended_fr):
+def merge_extended(all_extended_fr:list[Dict])->Dict:
+    """
+    Merge output of :py:func:`process_all_session` into a simple Dict
+
+    Parameters
+    ----------
+    all_extended_fr : list[Dict]
+        _description_
+
+    Returns
+    -------
+    Dict
+        NREM | REM | WAKE_HOMECAGE
+        list of firing for extended sleep / wake
+    """
     activiy = {'NREM': [],
                 'REM': [],
                 'WAKE_HOMECAGE': []}
@@ -339,6 +353,5 @@ def merge_extended(all_extended_fr):
     return activiy
 
 if __name__ == "__main__":
-
     df,fr_across_extended = process_all_sessions()
     # FIXME : SAVE DATA
