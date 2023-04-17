@@ -1,9 +1,12 @@
 from settings import upath
 
+import json
+from hashlib import sha256
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
+import scipy.stats 
 
 from bk import load
 from bk import stats
@@ -12,14 +15,74 @@ from bk import compute
 import neuroseries as nts
 
 from tqdm import tqdm
-from functools import reduce
+from functools import reduce, wraps
+import inspect
 
 from pathlib import Path
 from typing import Union, Optional,Tuple, Dict, Sequence
 from numpy.typing import ArrayLike
 
+def check_json(json_path,saved_args):
+    with open(json_path,'r') as jf:
+        old_args = json.load(jf)
 
-def process_session(base_folder:Union[Path,str]= upath['base_folder'],local_path:Union[Path,str]=upath['example_session'],discarded_states:Sequence[str] = ('DROWSY','WAKE'))->pd.DataFrame:
+    for name,value in saved_args.items():
+        old_value = old_args.get(name)
+        if old_value != value:
+            return False
+    return True
+
+def df_saver(args_to_save = None):
+    if args_to_save is None:
+        args_to_save = []
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args,**kwargs):
+            df = func(*args,**kwargs)
+            
+            # id_columns = ['Rat','Day','Shank','Id']
+
+            # source = inspect.getsource(func)
+            # hash = sha256(source.encode()).hexdigest()
+            
+            # csv_path = Path(f'processed_data/{func.__name__}.csv')
+            # json_path = csv_path.with_suffix('.json')
+            
+
+            # params = list(inspect.signature(func).parameters.keys())
+            # nargs = len(args)
+
+            # all_args = {p:v for p,v in zip(params,args[0:nargs])}
+            # all_args.update(kwargs)
+            
+            # saved_args = {k:v for k,v in all_args.items() if k in args_to_save}
+            # saved_args['saved_path'] = csv_path.as_posix()
+            # saved_args['sha256'] = hash
+            # valid = False
+        
+            # if csv_path.exists():
+            #     if json_path.exists():
+            #         valid = check_json(json_path,saved_args)
+            #         print(valid)
+            #     if valid:
+            #         tmp_csv = pd.read_csv(csv_path)
+            #         df = pd.merge(tmp_csv,df,on = id_columns,suffixes=['to_delete',''],how='outer')
+            #         c_to_drop = [c for c in df.columns if 'to_delete' in c]
+            #         df.drop(c_to_drop,axis = 1,inplace=True)
+            # df.to_csv(csv_path,index = False)
+            
+            # with open(f'processed_data/{func.__name__}.json','w') as jf:
+            #     json.dump(saved_args,jf,indent=2)
+            
+            return df
+        
+        return wrapper
+    return decorator
+
+def process_session(base_folder:Union[Path,str]= upath['base_folder'],
+                    local_path:Union[Path,str]=upath['example_session'],
+                    discarded_states:Sequence[str] = ('DROWSY','WAKE'),
+                    binSize:int = 1)->pd.DataFrame:
     """
     Process a session with computation relative to states firing rates
 
@@ -31,6 +94,8 @@ def process_session(base_folder:Union[Path,str]= upath['base_folder'],local_path
         relative path to the session
     discarded_states : Sequence[str], optional
         states not to be computed, by default ('DROWSY','WAKE')
+    binSize : int
+        binSize used for computing the firing rates across extended_sleep/wake
 
     Returns
     -------
@@ -41,8 +106,15 @@ def process_session(base_folder:Union[Path,str]= upath['base_folder'],local_path
         pInc is the probability of increased FR during REM
         pDec is the probability of decrease FR during REM
     """
-    md = load.session(base_folder=base_folder,local_path=local_path)
+    extended_params = {'sleep':{'sleep_th':60*30,
+                        'wake_th':60,
+                        'sub_states':['NREM','REM']},
+                    'wake':{'sleep_th':60,
+                        'wake_th':60*30,
+                        'sub_states':['WAKE_HOMECAGE']}}
     
+    
+    md = load.session(base_folder=base_folder,local_path=local_path)
     discarded_states = set(discarded_states)
 
     neurons,metadata = load.spikes(md)
@@ -53,16 +125,39 @@ def process_session(base_folder:Union[Path,str]= upath['base_folder'],local_path
     states = load.sleep_scoring(md,discard = discarded_states)
     states['SLEEP'] = states['NREM'].union(states['REM'])
 
+    fr_extended = fr_across_extended(neurons,metadata,extended_params,states,1)
+    binned_fr_extended = rebin_extended(fr_extended,30)
 
     df_states_fr = states_fr(neurons,metadata,states)
     df_rem_on = rem_on(neurons,metadata,states)
-    df_deltas = delta_fr_extended_state(neurons,metadata,states,60,5,5)
-    fr_extended = fr_across_extended(neurons,metadata,states,'BLA','Pyr',30)
-
+    df_deltas = delta_extended(fr_extended,metadata,30)
+    
     all_df = [df_states_fr,df_rem_on,df_deltas]
     df = reduce(lambda left,right: pd.merge(left,right,on=id_columns),all_df)
 
-    return df,fr_extended
+    return df,binned_fr_extended
+
+def rebin_extended(fr_extended,binSize = 30):
+    binned_act = {}
+    for state,sub_states in fr_extended.items():
+        binned_act[state] = {}
+        for c_sub,list_act in sub_states.items():
+            binned_act[state][c_sub] = []
+            for act in list_act:
+                c_binned_act = rebin_fr(act,30)
+                binned_act[state][c_sub].append(c_binned_act)
+    return binned_act
+
+def rebin_fr(act:nts.TsdFrame,binSize:int = 30):
+    binSize *= 1e6
+    bins = np.arange(np.min(act.times()),np.max(act.times()),binSize)
+
+    val,bin_edge,_ = scipy.stats.binned_statistic(act.times(),act.values.T,'mean',bins)
+    
+    t = (bin_edge[:-1] + bin_edge[1:]) / 2 
+    binned_act = nts.TsdFrame(t,val.T)
+
+    return binned_act
 
 def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'])->Tuple:
     """
@@ -91,12 +186,12 @@ def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'])->Tup
             print(f'{p} not taken care of because bug')
     
     df = pd.concat(all_df)
-    df.to_csv('processed_data/fr.csv',index = False)
+    # df.to_csv('processed_data/fr.csv',index = False)
 
     extended_fr = merge_extended(all_extended_fr)
     
     return df,extended_fr
-
+@df_saver()
 def states_fr(neurons:ArrayLike,metadata:pd.DataFrame,states:Dict[str,nts.IntervalSet])->pd.DataFrame:
     """
     Return the Firing rates in all states
@@ -127,6 +222,7 @@ def states_fr(neurons:ArrayLike,metadata:pd.DataFrame,states:Dict[str,nts.Interv
     
     return pd.concat((metadata,fr_states),axis=1)
 
+@df_saver()
 def rem_on(neurons:ArrayLike,metadata:pd.DataFrame,states:Dict[str,nts.IntervalSet])->pd.DataFrame:
     """
     Function that compute if a neuron is firing statisticaly more during REM sleep using the poisson test
@@ -153,7 +249,7 @@ def rem_on(neurons:ArrayLike,metadata:pd.DataFrame,states:Dict[str,nts.IntervalS
 def fr_across_extended_one_state(neurons:ArrayLike,
                                  states:Dict[str,nts.IntervalSet],
                                  binSize:int,
-                                 params:Dict[str,Dict],
+                                 sub_states:list[str],
                                  extended_states:nts.IntervalSet)->Dict[str,list]:
     """
     Compute the zscore FR during a list of extended state
@@ -178,27 +274,31 @@ def fr_across_extended_one_state(neurons:ArrayLike,
     Dict[str,list]
         _description_
     """
-    across_sleep_fr = {}
-    for state in params['sub_states']:
-        across_sleep_fr[state] = []
+
+    
+    
+    across_extended_fr = {}
+    for state in sub_states:
+        across_extended_fr[state] = []
         for s, e in extended_states.iloc:
             current_state = nts.IntervalSet(s, e)
-            state_intervals = states[state].intersect(current_state)
+            state_intervals = states[state].intersect(current_state) 
+            # Only REM/NREM or WAKE_HOMECAGE of this extended 
 
             act = compute.binSpikes(neurons,binSize,as_Tsd = True).restrict(state_intervals)
             act = compute.nts_zscore(act)
-            act.index = act.index - act.index.values[0]
-            average_act = nts.Tsd(act.times(),np.nanmean(act.values,1))
+            act.index = act.times() - act.index.values[0]
+            #Reset time of act to zero to start counting from beggining of extended
+            # average_act = nts.Tsd(act.times(),np.nanmean(act.values,1))
 
-            across_sleep_fr[state].append(average_act)
+            across_extended_fr[state].append(act)
 
-    return across_sleep_fr
+    return across_extended_fr
 
 def fr_across_extended(neurons:ArrayLike,
                        metadata:pd.DataFrame,
+                       extended_params:Dict[str,Dict],
                        states:Dict[str,nts.IntervalSet],
-                       stru:str,
-                       types:str,
                        binSize:int)->Dict[str,list]:
     """
     Compute zscore FR for all extended state of a session
@@ -209,122 +309,50 @@ def fr_across_extended(neurons:ArrayLike,
         list of neurons given by :py:func:`load.spikes`
     metadata : pd.DataFrame
         metadata as :py:func:`load.spikes`
+    extended_states : Dict[str,nts.IntervalState]
+        dict of all extended_sleep/wake for the session
     states : Dict[str,nts.IntervalSet]
         states as given by :py:func:`load.intervals`
-    stru : str
-        Structure of interest (BLA, HPC, etc )
-    types : str
-        Type of neurons (Pyr, Int)
     binSize : int
         Size of the bin used to compute the FR
-
-
     Returns
     -------
     Dict[str,list]
     """
-    extended_params = {'sleep':{'sleep_th':60*30,
-                            'wake_th':60,
-                            'sub_states':['NREM','REM']},
-                        'wake':{'sleep_th':60,
-                            'wake_th':60*30,
-                            'sub_states':['WAKE_HOMECAGE']}}
     
-    neurons = neurons[(metadata.Region == stru) & (metadata.Type == types)]
 
     across_sleep_fr = {}
+    extended_states = {}
     for state_name,params in extended_params.items():
-        extended_states = compute.extended(states,state_name,params['sleep_th'],params['wake_th'])
-        across_sleep_fr[state_name] = fr_across_extended_one_state(neurons, states, binSize, params, extended_states)
+        current_extended = compute.extended(states,state_name,params['sleep_th'],params['wake_th'])
+        across_sleep_fr[state_name] = fr_across_extended_one_state(neurons, states, binSize, params['sub_states'], current_extended)
+        
+        extended_states[state_name] = current_extended
+    
+
+
 
     return across_sleep_fr
 
-def delta_fr_one_state(neurons:ArrayLike, 
-                       states:Dict[str,nts.IntervalSet], 
-                       length_compute_fr:int, 
-                       params:Dict[str,Dict], 
-                       extended_states:nts.IntervalSet)->Dict[str,list]:
-    """
-    Compute the Delta FR between the beg and the end of a state extended
-    Parameters
-    ----------
-    neurons : ArrayLike
-        list of neurons given by :py:func:`load.spikes`
-    states : Dict[str,nts.IntervalSet]
-        states as given by :py:func:`load.intervals`
-    length_compute_fr : int
-        Amount of time taken at the beg and end to compute the FR
-    params : Dict[Dict]
-        Params given by :py:func:`delta_fr_extended_state`
-    extended_states : nts.IntervalSet
-        extended_states as given by :py:func:`compute.extended`
-
-    Returns
-    -------
-    Dict
-        Dict of list length N neurons, contains zscore delta FR for each substate
-    """
-    deltas = {}
-    for state in params['sub_states']:
-        deltas[state] = []
-        for s, e in extended_states.iloc:
-            current_state = nts.IntervalSet(s, e)
-            state_intervals = states[state].intersect(current_state)
-            act = compute.binSpikes(neurons,1,as_Tsd = True).restrict(state_intervals)
-            act = compute.nts_zscore(act)
-            fr_beg = np.nansum(act.iloc[0:length_compute_fr].values,0)/length_compute_fr
-            fr_end = np.nansum(act.iloc[-length_compute_fr:-1].values,0)/length_compute_fr
-            deltas[state].append(fr_end-fr_beg)
-    
-    return deltas
-
-def delta_fr_extended_state(neurons:ArrayLike,
-                            metadata:pd.DataFrame,
-                            states:Dict[str,nts.IntervalSet],
-                            length_compute_fr:int,
-                            sleep_th:int,
-                            wake_th:int)->pd.DataFrame:
-    """
-    Compute the Delta FR between the beg and the end of a list of extended state
-
-    Parameters
-    ----------
-    neurons : ArrayLike
-        list of neurons given by :py:func:`load.spikes`
-    metadata : pd.DataFrame
-        metadata as :py:func:`load.spikes`
-    states : Dict[str,nts.IntervalSet]
-        states as given by :py:func:`load.intervals`
-    length_compute_fr : int
-        Amount of time taken at the beg and end to compute the FR
-    sleep_th : int
-        _description_
-    wake_th : int
-        _description_
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with columns NREM/REM/WAKE_HOMECAGE, each line is a neuron and values are delta FR between the beg and end of extended
-    """
-    extended_params = {'sleep':{'sleep_th':60*30,
-                                'wake_th':60,
-                                'sub_states':['NREM','REM']},
-                       'wake':{'sleep_th':60,
-                                'wake_th':60*30,
-                                'sub_states':['WAKE_HOMECAGE']}}
-
-    
-    deltas = {}
-    for state_name,params in extended_params.items():
-        extended_states = compute.extended(states,state_name,params['sleep_th'],params['wake_th'])
-        deltas[state_name] = delta_fr_one_state(neurons, states, length_compute_fr, params, extended_states)
-
-    df = pd.DataFrame()
-    for state in deltas:
-        for substate in deltas[state]:
-            df[f'delta_{substate}'] = np.nanmean(deltas[state][substate],0)
-    return pd.concat((metadata,df),axis = 1)
+@df_saver(args_to_save=['length_to_compute'])
+def delta_extended(fr_extended,metadata,length_to_compute):
+    length_to_compute *= 1e6
+    dfs = []
+    for state,sub_states in fr_extended.items():
+        for c_sub,list_act in sub_states.items():
+            l_deltas = []
+            for act in list_act:
+                binSize = int(np.diff(act.times())[0])
+                nbins = int(length_to_compute/binSize)
+                c_delta = np.nanmean(act.values[-nbins-1:-1],0) - np.nanmean(act.values[0:nbins,:],0)                
+                l_deltas.append(c_delta)
+            if len(l_deltas) != 0:
+                dfs.append(pd.DataFrame(np.nanmean(l_deltas,axis = 0),columns=[c_sub]))
+            else:
+                dfs.append(pd.DataFrame(columns=[c_sub]))
+    df = pd.concat(dfs,axis=1)
+    df = pd.concat([metadata,df],axis = 1)
+    return df
 
 def merge_extended(all_extended_fr:list[Dict])->Dict:
     """
@@ -341,16 +369,17 @@ def merge_extended(all_extended_fr:list[Dict])->Dict:
         NREM | REM | WAKE_HOMECAGE
         list of firing for extended sleep / wake
     """
-    activiy = {'NREM': [],
+    activity = {'NREM': [],
                 'REM': [],
                 'WAKE_HOMECAGE': []}
+    
     for sess in all_extended_fr:
         for state in sess:
             for substate in sess[state]:
                 for v in sess[state][substate]:
-                    activiy[substate].append(v)
-    return activiy
+                    activity[substate].append(v)
+    return activity
 
 if __name__ == "__main__":
-    df,fr_across_extended = process_all_sessions()
+    df,fr = process_all_sessions()
     # FIXME : SAVE DATA

@@ -110,7 +110,7 @@ def plot_fr_across_extended(extended:Dict[str,list]):
     plot_delta(ax[6])
     plt.tight_layout()
     plt.show()
-    plt.savefig('plots/figures/decrease.svg')
+    plt.savefig('plots/figures/decrease2.svg')
 
 if __name__ == '__main__':
     plt.style.use('ggplot')
