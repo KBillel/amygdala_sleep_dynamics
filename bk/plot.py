@@ -5,16 +5,17 @@ import neuroseries as nts
 import bk.compute
 import scipy.stats
 
-def rasterPlot(neurons,window = None,col = 'black',width= 0.5,height = 1,offsets = 1):
+def rasterPlot(neurons,window = None,col = 'black',width= 0.5,height = 1,offsets = 1, ax=None):
+    if ax is None:
+        fig, ax = plt.subplots()
+
     if window is None:
-        last_spike = np.empty(len(neurons))
-        for i,n in enumerate(neurons):
-            last_spike[i] = n.as_units('s').index.values[-1]
-        
+        last_spike = np.array([n.as_units('s').index.values[-1] for n in neurons])
         window = np.array([[0,np.max(last_spike)]])
             
-    if type(window) is list: window = np.array([window])
+    window = np.atleast_2d(np.array(window))
     window = nts.IntervalSet(window[:,0],window[:,1],time_units = 's')
+
     neurons_np = []
     
     if isinstance(neurons,nts.time_series.Tsd):
@@ -25,26 +26,33 @@ def rasterPlot(neurons,window = None,col = 'black',width= 0.5,height = 1,offsets
     neurons_np = np.array(neurons_np,dtype = 'object')
     
     
-    plt.eventplot(neurons_np,color = col,linewidth = width,linelengths=height,lineoffsets=offsets)
-    plt.ylabel('Neurons')
-    plt.xlabel('Time(s)')
-    
+    ax.eventplot(neurons_np,color = col,linewidth = width,linelengths=height,lineoffsets=offsets)
+    ax.set_ylabel('Neurons')
+    ax.set_xlabel('Time(s)')
+    return ax
+
+
 def intervals(intervals,col = 'orange',alpha = 0.5,time_units = 's',ymin = 0,ymax = 1,ax = None):
     if ax is None:
-        fig,ax = plt.subplots(1,1)
-    if type(intervals) != nts.interval_set.IntervalSet:
+        fig, ax = plt.subplots(1,1)
+    if not isinstance(intervals, nts.interval_set.IntervalSet):
         print(type(intervals))
+        # Fixme: This assumes a dict/dataframe. How useful is it?
         intervals = nts.IntervalSet(intervals['start'],intervals['end'])
     
     for interval in intervals.as_units(time_units).values:
         ax.axvspan(interval[0],interval[1], facecolor=col, alpha=alpha,ymin = ymin, ymax = ymax)
+    return ax
+
 
 def spectrogram(t,f,spec,log = False,ax = None,vmin = None,vmax = None):
-    if ax == None: 
-        fig,ax = plt.subplots(1,1)    
+    if ax is None:
+        fig, ax = plt.subplots(1,1)
 
-    if log: spec = np.log(spec)
+    if log:
+        spec = np.log(spec)
     ax.pcolormesh(t,f,spec)
+    return ax
 
     
 def cumsum_curves(x,nbins,col = 'orange',ax = None, log = False):
@@ -57,24 +65,30 @@ def cumsum_curves(x,nbins,col = 'orange',ax = None, log = False):
         ax.semilogx(x,y,col)
     else:
         ax.plot(x,y,col)
+    return ax
 
 
 def confidence_intervals(x,y,style = None,ax = None):
+    # Todo: To remove
     if ax is None:
-        fig,ax = plt.subplots(1,1)
+        fig,ax = plt.subplots(1, 1)
     
     conf = 1.96*scipy.stats.sem(y,0,nan_policy='omit')
     m = np.nanmean(y,0)
-    ax.plot(x,m,c = style)
     ax.fill_between(x,m+conf,m-conf,color = style,alpha = 0.2)
+    ax.plot(x,m,c = style)
+    return ax
+
 
 def curve_and_shades(x,y,method = 'std',style = 'orange',ax = None):
+    # Fixme: This is very similar to confidence_intervals but the sem calculation is different
+    # They should be merged, homogeneized and only one should be used
     if ax is None:
         fig,ax = plt.subplots(1,1)
     if method.lower() == 'std':
         shade = np.nanstd(y,0)
     elif method.lower() == 'sem':
-        shade = scipy.stats.sem(y,0,nan_policy='omit')
+        shade = scipy.stats.sem(y,0,nan_policy='omit')   # * 1.96 ?
      
     m = np.nanmean(y,0)
     ax.plot(x,m,style)

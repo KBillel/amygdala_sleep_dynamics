@@ -5,6 +5,8 @@
 ### General
 
 - [ ] Batch ?
+- [ ] Documentation on how to use the code
+- [ ] Diagram of calls from data to figures
 
 ### Processing
 

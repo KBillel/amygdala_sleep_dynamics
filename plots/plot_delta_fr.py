@@ -30,6 +30,7 @@ def average_by_equal_sized_group(df:pd.DataFrame,nbins:int)->Tuple[pd.DataFrame]
     df['bin'] = pd.qcut(df.index.values,nbins,range(nbins))
     return df.groupby('bin').mean(numeric_only = True).Times,df.groupby('bin').mean(numeric_only = True).FR,df.groupby('bin').sem(numeric_only = True).FR
 
+
 def plot_scatter_extended(extended_state:list,color:str,ax:Tuple)-> bool:
     """
     Scatter plot an extended_state
@@ -54,6 +55,7 @@ def plot_scatter_extended(extended_state:list,color:str,ax:Tuple)-> bool:
     df_melt.dropna(inplace=True)
     df = df.drop('Times',axis = 1)
     reg = scipy.stats.linregress(df_melt.Times/1_000_000,df_melt.FR)
+    # TODO: Write the regression parameters on the plot?
     print(reg)
     print(len(df_melt))      
     x = range(6000)
@@ -78,9 +80,10 @@ def plot_scatter_extended(extended_state:list,color:str,ax:Tuple)-> bool:
     ax[1].set_ylim(-0.25,0.25)
     ax[1].set_xlim(0,4000)
     plot.forceAspect(ax[1])
-    return False
+    return ax
 
-def plot_delta(ax):
+
+def plot_delta(ax=None, fr_csv='processed_data/fr.csv'):
     """
     Plot barplot of delta FR beg vs end of extended sleep
 
@@ -89,7 +92,9 @@ def plot_delta(ax):
     ax : axis
         matplotlib axis
     """
-    df = pd.read_csv('processed_data/fr.csv')
+    if ax is None:
+        fig, ax = plt.subplots()
+    df = pd.read_csv(fr_csv)
     sns.barplot(df[(df.Region == 'BLA') & (df.Type == 'Pyr')],order=['delta_NREM','delta_REM','delta_WAKE_HOMECAGE'],ax = ax)
     ax.set_ylim(-0.1,0.1)
     plot.forceAspect(ax)
