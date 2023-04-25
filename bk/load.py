@@ -91,7 +91,7 @@ def session(base_folder:Optional[Union[str,Path]] = upath['base_folder'],
                         'rat':rat,
                         'day':day,
                         'session_path':session_path,
-                        'session_name':session_name,
+                        'sesssion_name':session_name,
                         'n_channels':n_channels
                         }
 
