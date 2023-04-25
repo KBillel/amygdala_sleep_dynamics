@@ -40,39 +40,39 @@ def df_saver(args_to_save = None):
         def wrapper(*args,**kwargs):
             df = func(*args,**kwargs)
             
-            # id_columns = ['Rat','Day','Shank','Id']
+            id_columns = ['Rat','Day','Shank','Id']
 
-            # source = inspect.getsource(func)
-            # hash = sha256(source.encode()).hexdigest()
+            source = inspect.getsource(func)
+            hash = sha256(source.encode()).hexdigest()
             
-            # csv_path = Path(f'processed_data/{func.__name__}.csv')
-            # json_path = csv_path.with_suffix('.json')
+            csv_path = Path(f'processed_data/{func.__name__}.csv')
+            json_path = csv_path.with_suffix('.json')
             
 
-            # params = list(inspect.signature(func).parameters.keys())
-            # nargs = len(args)
+            params = list(inspect.signature(func).parameters.keys())
+            nargs = len(args)
 
-            # all_args = {p:v for p,v in zip(params,args[0:nargs])}
-            # all_args.update(kwargs)
+            all_args = {p:v for p,v in zip(params,args[0:nargs])}
+            all_args.update(kwargs)
             
-            # saved_args = {k:v for k,v in all_args.items() if k in args_to_save}
-            # saved_args['saved_path'] = csv_path.as_posix()
-            # saved_args['sha256'] = hash
-            # valid = False
+            saved_args = {k:v for k,v in all_args.items() if k in args_to_save}
+            saved_args['saved_path'] = csv_path.as_posix()
+            saved_args['sha256'] = hash
+            valid = False
         
-            # if csv_path.exists():
-            #     if json_path.exists():
-            #         valid = check_json(json_path,saved_args)
-            #         print(valid)
-            #     if valid:
-            #         tmp_csv = pd.read_csv(csv_path)
-            #         df = pd.merge(tmp_csv,df,on = id_columns,suffixes=['to_delete',''],how='outer')
-            #         c_to_drop = [c for c in df.columns if 'to_delete' in c]
-            #         df.drop(c_to_drop,axis = 1,inplace=True)
-            # df.to_csv(csv_path,index = False)
+            if csv_path.exists():
+                if json_path.exists():
+                    valid = check_json(json_path,saved_args)
+                    print(valid)
+                if valid:
+                    tmp_csv = pd.read_csv(csv_path)
+                    df = pd.merge(tmp_csv,df,on = id_columns,suffixes=['to_delete',''],how='outer')
+                    c_to_drop = [c for c in df.columns if 'to_delete' in c]
+                    df.drop(c_to_drop,axis = 1,inplace=True)
+            df.to_csv(csv_path,index = False)
             
-            # with open(f'processed_data/{func.__name__}.json','w') as jf:
-            #     json.dump(saved_args,jf,indent=2)
+            with open(f'processed_data/{func.__name__}.json','w') as jf:
+                json.dump(saved_args,jf,indent=2)
             
             return df
         
