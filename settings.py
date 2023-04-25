@@ -6,3 +6,7 @@ users_paths = {'billel':
 username = getuser()
 
 upath = users_paths[username]
+
+colors = {'NREM':'#808080ff',
+          'REM':'#ffa500ff',
+          'WAKE_HOMECAGE':'#25b262ff'}

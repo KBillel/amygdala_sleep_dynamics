@@ -14,6 +14,7 @@ import neuroseries as nts
 
 from tqdm import tqdm
 from functools import reduce
+import shelve
 
 from pathlib import Path
 from typing import Union, Optional,Tuple, Dict, Sequence
@@ -66,7 +67,17 @@ def closest_interval(state:nts.IntervalSet,interval:nts.IntervalSet)->Tuple[nts.
 
     return state.iloc[idx_before],state.iloc[idx_after]
 
-def find_transitions(states:Dict[str,nts.IntervalSet],previous_state:str='NREM',state:str='REM',next_state:str=None,min_durations:Dict[str,int]=None,epsilon:float = 1.5)->list[pd.DataFrame]:
+
+def check_continuity(block, cont_th=1.5):
+    cont_th_us = cont_th * 1_000_000
+    starts = block['start'].values
+    stops = block['end'].values
+    delta_t = starts[1:] - stops[:-1]
+    is_hole = np.any(delta_t > cont_th_us)
+    return not is_hole
+
+
+def find_transitions(states:Dict[str,nts.IntervalSet], n_states=2, min_durations:Dict[str,int]=None)->list[pd.DataFrame]:
     """
     This function compute timing of transitions from a state to another. 
 
@@ -89,51 +100,34 @@ def find_transitions(states:Dict[str,nts.IntervalSet],previous_state:str='NREM',
         List of dataframe. Each DataFrame contains a transition event
     """
     
-    epsilon *= 1_000_000 # conversion to µs
+    states = {name: intervals for name, intervals in states.items() if name != 'WAKE'}
+    l_state_df = []
+    for name, intervals in states.items():
+        intervals['state'] = name
+        l_state_df.append(intervals)
+    state_df = pd.concat(l_state_df)
+    state_df.sort_values(by='start', inplace=True)
+    state_df.reset_index(drop = True, inplace=True)
+    for irow, row in state_df.iterrows():
+        if row['end'] - row['start'] < min_durations[row['state']]*1_000_000:
+            state_df.loc[irow, 'state'] = 'HOLE'
+    transitions = {}
 
-    for s,value in min_durations.items():
-        states[s] = states[s].drop_short_intervals(value,time_units='s').reset_index(drop = True)
-        if len(states[s]) == 0:
-            print(f'There is no {s} longer than {min_durations[s]} in states')
-            return []
-
-    
-    if previous_state is not None:
-        t_before = states[state].start - epsilon
-        states_before = [in_state(t,states) for t in t_before]
-
-    if next_state is not None:
-        states_names = [previous_state,state,next_state]
-
-        t_after = states[state].end + epsilon
-        states_after = [in_state(t,states) for t in t_after]
-        previous_valid = [previous_state in s for s in states_before]
-        next_valid = [next_state in s for s in states_after]
-        
-        valid =  [a and b for a,b in zip(previous_valid,next_valid)]
-        
-    else:
-        states_names = [previous_state,state]
-        valid = [previous_state in s for s in states_before]
-    
-    transitions = []
-    for interval in states[state][valid].iloc:
-        previous_interval = closest_interval(states[previous_state],interval)[0]
-        if next_state is not None:
-            next_interval = closest_interval(states[next_state],interval)[1]
-            df_ = pd.DataFrame([previous_interval,interval,next_interval])
-        else:
-            df_ = pd.DataFrame([previous_interval,interval])
-            
-        # adding, removing 0.5s on each start/end because states are not contigus other wise
-        df_.start = df_.start - 500_000 
-        df_.end = df_.end + 500_000
-        df_['state'] = states_names
-        transitions.append(df_.reset_index(drop=True))
-        
+    n_rows = len(state_df)
+    for irow, row in state_df.iterrows():
+        if irow > n_rows - n_states:
+            break
+        c_block = state_df.iloc[irow:irow+n_states]
+        is_cont = check_continuity(c_block)
+        if (not is_cont) or ('HOLE' in c_block['state'].values):
+            continue
+        trans_name = '-'.join(c_block['state'].values)
+        prev_trans = transitions.get(trans_name, [])
+        prev_trans.append(c_block)
+        transitions[trans_name] = prev_trans
     return transitions
 
-def compute_transition_activity(neurons:ArrayLike,l_transitions_intervals:list[pd.DataFrame],nbins:Dict[str,int])->ArrayLike:
+def compute_transitions_activity(neurons:ArrayLike,transitions:list[pd.DataFrame],nbins:Dict[str,int])->ArrayLike:
     """
     Function compute the normalized activity for each neurons for all transitions
 
@@ -151,20 +145,24 @@ def compute_transition_activity(neurons:ArrayLike,l_transitions_intervals:list[p
     ArrayLike
         _description_
     """
+    activity = {}
+    for tr_name,tr_l_intervals in transitions.items():
+        fr_array_tr = []
+        for interval in tr_l_intervals:
+            
+            l_spikes = []
+            for irow,row in interval.iterrows():
+                start_s = (row.start / 1_000_000) -0.5
+                end_s = (row.end / 1_000_000) +0.5
+                delta_t = (end_s - start_s) / nbins[row['state']]
+                t,b = compute.binSpikes(neurons,start = start_s,stop = end_s,nbins = nbins[row['state']])
+                b = b / delta_t
+                l_spikes.append(b)
+            fr_array = np.hstack(l_spikes)
+            fr_array_tr.append(fr_array)
+        activity[tr_name] = np.dstack(fr_array_tr)
+    return activity
 
-    for transition_interval in l_transitions_intervals:
-        pass
-
-
-def process_session(base_folder:Union[Path,str]= upath['base_folder'],local_path:Union[Path,str]=upath['example_session'],discarded_states:Sequence[str] = ('DROWSY','WAKE'))->pd.DataFrame:
-    md = load.session(base_folder=base_folder,local_path=local_path)
-    discarded_states = set(discarded_states)
-
-    neurons,metadata = load.spikes(md)
-    metadata['SessID'] = metadata.index
-
-    id_columns = list(metadata.columns)
-    states = load.sleep_scoring(md,discard = discarded_states)
 
 
 def plot_all_intervals(states):
@@ -174,30 +172,71 @@ def plot_all_intervals(states):
     plot.intervals(states['WAKE_HOMECAGE'],'cyan',ax =ax[0])
 
 
+def process_session(base_folder:Union[Path,str]= upath['base_folder'],
+                    local_path:Union[Path,str]=upath['example_session'],
+                    nbins=None,
+                    min_durations=None,
+                    save = False)->pd.DataFrame:
+    
+    md = load.session(base_folder,local_path)
+    states = load.sleep_scoring(md)
+    neurons,metadata = load.spikes(md)
+    
+    transitions = find_transitions(states,2,min_durations)
+    activity = compute_transitions_activity(neurons[(metadata.Region == 'BLA') & (metadata.Type == 'Pyr')],transitions,nbins)
+
+    if save: 
+        with shelve.open(f'{md.get("session_name")}-transitions_activity') as f:
+            f['metadata'] = metadata
+            f['transitions'] = transitions
+            f['activity'] = activity
+    return transitions,activity
+
+def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'],**kwargs)->Tuple:
+    """
+    Run :py:func:'process_session' for all session in the dataset
+
+    Parameters
+    ----------
+    base_folder : Union[Path,str], optional
+        _description_, by default upath['base_folder']
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+
+    session_list = load.session_list()
+    all_df = []
+    all_extended_fr = []
+    for p in tqdm(session_list.Path):
+        try:
+            print(p)
+            df = process_session(local_path=p,**kwargs)
+            all_df.append(df)
+        except:
+            print(f'{p} not taken care of because bug')
+    
+
+    return all_df
+
 if __name__ == '__main__':
-    md = load.session()
-    discarded_states = set()
-    states = load.sleep_scoring(md,discard = discarded_states)
 
     min_durations = {
         'NREM':200,
         'REM':50,
-        'WAKE_HOMECAGE':200
+        'WAKE_HOMECAGE':200,
+        'DROWSY': 25
     }
 
-    transitions = find_transitions(states,'NREM','REM',min_durations = min_durations)
-
-    fig,ax = plt.subplots(2,1,sharex=True)
-    plot.intervals(states['NREM'],'grey',ax =ax[0])
-    plot.intervals(states['REM'],'orange',ax =ax[0])
-    plot.intervals(states['WAKE_HOMECAGE'],'cyan',ax =ax[0])
-
-    for t in transitions:
-        plot.intervals(t,'red',ax=ax[1])
+    nbins = {
+        'NREM':30,
+        'REM':12,
+        'WAKE_HOMECAGE':30,
+        'DROWSY':1}
     
-    plt.show()
-
-
-
-
+    save = True
+    
+    process_session(nbins = nbins, min_durations=min_durations,save = save)
 

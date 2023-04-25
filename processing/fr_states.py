@@ -22,6 +22,9 @@ from pathlib import Path
 from typing import Union, Optional,Tuple, Dict, Sequence
 from numpy.typing import ArrayLike
 
+FORCE = False
+
+
 def check_json(json_path,saved_args):
     with open(json_path,'r') as jf:
         old_args = json.load(jf)
@@ -32,14 +35,12 @@ def check_json(json_path,saved_args):
             return False
     return True
 
-def df_saver(args_to_save = None):
+def df_saver(args_to_save = None, force=False):
     if args_to_save is None:
         args_to_save = []
     def decorator(func):
         @wraps(func)
         def wrapper(*args,**kwargs):
-            df = func(*args,**kwargs)
-            
             id_columns = ['Rat','Day','Shank','Id']
 
             source = inspect.getsource(func)
@@ -54,21 +55,31 @@ def df_saver(args_to_save = None):
 
             all_args = {p:v for p,v in zip(params,args[0:nargs])}
             all_args.update(kwargs)
-            
+
             saved_args = {k:v for k,v in all_args.items() if k in args_to_save}
             saved_args['saved_path'] = csv_path.as_posix()
             saved_args['sha256'] = hash
             valid = False
-        
+            tmp_csv = None
             if csv_path.exists():
                 if json_path.exists():
                     valid = check_json(json_path,saved_args)
                     print(valid)
                 if valid:
                     tmp_csv = pd.read_csv(csv_path)
-                    df = pd.merge(tmp_csv,df,on = id_columns,suffixes=['to_delete',''],how='outer')
-                    c_to_drop = [c for c in df.columns if 'to_delete' in c]
-                    df.drop(c_to_drop,axis = 1,inplace=True)
+                    metadata = all_args.get('metadata', pd.DataFrame())
+                    day_num = metadata['Day'].unique()[0]
+                    rat_num = metadata['Rat'].unique()[0]
+                    mask_session = (tmp_csv['Rat'] == rat_num) & (tmp_csv['Day'] == day_num)
+                    f_session = tmp_csv[mask_session]
+                    if len(f_session) > 0 and not force:
+                        return f_session
+                    elif len(f_session) > 0 and force:
+                        tmp_csv = tmp_csv[np.logical_not(mask_session)]
+
+            df = func(*args,**kwargs)
+            if tmp_csv is not None:
+                df = pd.concat([tmp_csv, df])
             df.to_csv(csv_path,index = False)
             
             with open(f'processed_data/{func.__name__}.json','w') as jf:
@@ -191,7 +202,8 @@ def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'])->Tup
     extended_fr = merge_extended(all_extended_fr)
     
     return df,extended_fr
-@df_saver()
+
+@df_saver(force=FORCE)
 def states_fr(neurons:ArrayLike,metadata:pd.DataFrame,states:Dict[str,nts.IntervalSet])->pd.DataFrame:
     """
     Return the Firing rates in all states
@@ -222,7 +234,7 @@ def states_fr(neurons:ArrayLike,metadata:pd.DataFrame,states:Dict[str,nts.Interv
     
     return pd.concat((metadata,fr_states),axis=1)
 
-@df_saver()
+@df_saver(force=FORCE)
 def rem_on(neurons:ArrayLike,metadata:pd.DataFrame,states:Dict[str,nts.IntervalSet])->pd.DataFrame:
     """
     Function that compute if a neuron is firing statisticaly more during REM sleep using the poisson test
@@ -334,7 +346,7 @@ def fr_across_extended(neurons:ArrayLike,
 
     return across_sleep_fr
 
-@df_saver(args_to_save=['length_to_compute'])
+@df_saver(args_to_save=['length_to_compute'], force=FORCE)
 def delta_extended(fr_extended,metadata,length_to_compute):
     length_to_compute *= 1e6
     dfs = []
@@ -382,4 +394,7 @@ def merge_extended(all_extended_fr:list[Dict])->Dict:
 
 if __name__ == "__main__":
     df,fr = process_all_sessions()
+    # df,fr = process_session()
     # FIXME : SAVE DATA
+    print('yes')
+    
