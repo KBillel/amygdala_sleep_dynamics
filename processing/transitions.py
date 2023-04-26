@@ -99,10 +99,10 @@ def find_transitions(states:Dict[str,nts.IntervalSet], n_states=2, min_durations
     list[pd.Dataframe]
         List of dataframe. Each DataFrame contains a transition event
     """
-    
     states = {name: intervals for name, intervals in states.items() if name != 'WAKE'}
     l_state_df = []
     for name, intervals in states.items():
+        intervals = intervals.copy()
         intervals['state'] = name
         l_state_df.append(intervals)
     state_df = pd.concat(l_state_df)
@@ -127,7 +127,7 @@ def find_transitions(states:Dict[str,nts.IntervalSet], n_states=2, min_durations
         transitions[trans_name] = prev_trans
     return transitions
 
-def compute_transitions_activity(neurons:ArrayLike,transitions:list[pd.DataFrame],nbins:Dict[str,int])->ArrayLike:
+def compute_transitions_activity(neurons:ArrayLike,transitions:dict[list[nts.IntervalSet]],nbins:Dict[str,int])->ArrayLike:
     """
     Function compute the normalized activity for each neurons for all transitions
 
@@ -149,11 +149,10 @@ def compute_transitions_activity(neurons:ArrayLike,transitions:list[pd.DataFrame
     for tr_name,tr_l_intervals in transitions.items():
         fr_array_tr = []
         for interval in tr_l_intervals:
-            
             l_spikes = []
             for irow,row in interval.iterrows():
-                start_s = (row.start / 1_000_000) -0.5
-                end_s = (row.end / 1_000_000) +0.5
+                start_s = (row.start / 1_000_000)
+                end_s = (row.end / 1_000_000)
                 delta_t = (end_s - start_s) / nbins[row['state']]
                 t,b = compute.binSpikes(neurons,start = start_s,stop = end_s,nbins = nbins[row['state']])
                 b = b / delta_t
@@ -182,15 +181,21 @@ def process_session(base_folder:Union[Path,str]= upath['base_folder'],
     states = load.sleep_scoring(md)
     neurons,metadata = load.spikes(md)
     
-    transitions = find_transitions(states,2,min_durations)
-    activity = compute_transitions_activity(neurons[(metadata.Region == 'BLA') & (metadata.Type == 'Pyr')],transitions,nbins)
-
+    transitions = find_transitions(states,n_states=2,min_durations = min_durations)
+    transitions.update(find_transitions(states,n_states=3,min_durations = min_durations))
+    activity = compute_transitions_activity(neurons,transitions,nbins)    
+    
+    
     if save: 
-        with shelve.open(f'{md.get("session_name")}-transitions_activity') as f:
-            f['metadata'] = metadata
-            f['transitions'] = transitions
-            f['activity'] = activity
+        shelves_save(md, metadata, transitions, activity)
+
     return transitions,activity
+
+def shelves_save(md, metadata, transitions, activity):
+    with shelve.open(f'{md["session_name"]}-transitions_activity') as f:
+        f['metadata'] = metadata
+        f['transitions'] = transitions
+        f['activity'] = activity
 
 def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'],**kwargs)->Tuple:
     """
@@ -236,7 +241,7 @@ if __name__ == '__main__':
         'WAKE_HOMECAGE':30,
         'DROWSY':1}
     
-    save = True
+    save = False
     
     process_session(nbins = nbins, min_durations=min_durations,save = save)
 
