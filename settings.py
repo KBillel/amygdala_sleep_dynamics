@@ -9,4 +9,4 @@ upath = users_paths[username]
 
 colors = {'NREM':'#808080ff',
           'REM':'#ffa500ff',
-          'WAKE_HOMECAGE':'#25b262ff'}
+          'WAKE_HOMECAGE':'#008bc8ff'}
