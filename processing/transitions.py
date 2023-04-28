@@ -111,8 +111,8 @@ def find_transitions(states:Dict[str,nts.IntervalSet], n_states=2, min_durations
     for irow, row in state_df.iterrows():
         if row['end'] - row['start'] < min_durations[row['state']]*1_000_000:
             state_df.loc[irow, 'state'] = 'HOLE'
+            
     transitions = {}
-
     n_rows = len(state_df)
     for irow, row in state_df.iterrows():
         if irow > n_rows - n_states:
@@ -161,7 +161,6 @@ def compute_transitions_activity(neurons:ArrayLike,transitions:dict[list[nts.Int
             fr_array_tr.append(fr_array)
         activity[tr_name] = np.dstack(fr_array_tr)
     return activity
-
 
 
 def plot_all_intervals(states):

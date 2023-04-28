@@ -11,6 +11,7 @@ import scipy.stats
 from bk import load
 from bk import stats
 from bk import compute
+from bk import io
 
 import neuroseries as nts
 
@@ -72,11 +73,13 @@ def df_saver(args_to_save=None, force=False):
                     metadata = all_args.get('metadata', pd.DataFrame())
                     day_num = metadata['Day'].unique()[0]
                     rat_num = metadata['Rat'].unique()[0]
-                    mask_session = (tmp_csv['Rat'] == rat_num) & (tmp_csv['Day'] == day_num)
+                    mask_session = (tmp_csv['Rat'] == rat_num) & (
+                        tmp_csv['Day'] == day_num)
                     f_session = tmp_csv[mask_session]
-                    if len(f_session) > 0 and not force:  # if session is already processed and we do not need to force -> Return whats in the dataframe
+                    # if session is already processed and we do not need to force -> Return whats in the dataframe
+                    if len(f_session) > 0 and not force:
                         return f_session
-                    elif len(f_session) > 0 and force: 
+                    elif len(f_session) > 0 and force:
                         tmp_csv = tmp_csv[np.logical_not(mask_session)]
 
             df = func(*args, **kwargs)
@@ -97,8 +100,7 @@ def rebin_fr(act: nts.TsdFrame, binSize: int = 30):
     binSize *= 1e6
     bins = np.arange(np.min(act.times()), np.max(act.times()), binSize)
 
-    val, bin_edge, _ = scipy.stats.binned_statistic(
-        act.times(), act.values.T, 'mean', bins)
+    val, bin_edge, _ = scipy.stats.binned_statistic(act.times(), act.values.T, 'mean', bins)
 
     t = (bin_edge[:-1] + bin_edge[1:]) / 2
     binned_act = nts.TsdFrame(t, val.T)
@@ -155,8 +157,7 @@ def fr_across_extended_one_state(neurons: ArrayLike,
             state_intervals = states[state].intersect(current_state)
             # Only REM/NREM or WAKE_HOMECAGE of this extended
 
-            act = compute.binSpikes(
-                neurons, binSize, as_Tsd=True).restrict(state_intervals)
+            act = compute.binSpikes(neurons, binSize, as_Tsd=True).restrict(state_intervals)
             act = compute.nts_zscore(act)
             act.index = act.times() - act.index.values[0]
             # Reset time of act to zero to start counting from beggining of extended
@@ -195,10 +196,8 @@ def fr_across_extended(neurons: ArrayLike,
     across_sleep_fr = {}
     extended_states = {}
     for state_name, params in extended_params.items():
-        current_extended = compute.extended(
-            states, state_name, params['sleep_th'], params['wake_th'])
-        across_sleep_fr[state_name] = fr_across_extended_one_state(
-            neurons, states, binSize, params['sub_states'], current_extended)
+        current_extended = compute.extended(states, state_name, params['sleep_th'], params['wake_th'])
+        across_sleep_fr[state_name] = fr_across_extended_one_state(neurons, states, binSize, params['sub_states'], current_extended)
         extended_states[state_name] = current_extended
     return across_sleep_fr
 
@@ -283,7 +282,7 @@ def delta_extended(fr_extended, metadata, length_to_compute):
     return df
 
 
-def merge_extended(all_extended_fr: list[Dict]) -> Dict:
+def merge_extended(all_extended_fr: list[Dict],all_metadata) -> Dict:
     """
     Merge output of :py:func:`process_all_session` into a simple Dict
 
@@ -298,16 +297,20 @@ def merge_extended(all_extended_fr: list[Dict]) -> Dict:
         NREM | REM | WAKE_HOMECAGE
         list of firing for extended sleep / wake
     """
-    activity = {'NREM': [],
-                'REM': [],
-                'WAKE_HOMECAGE': []}
-
-    for sess in all_extended_fr:
-        for state in sess:
-            for substate in sess[state]:
-                for v in sess[state][substate]:
-                    activity[substate].append(v)
-    return activity
+    extended = {}
+    for extended_fr,metadata in zip(all_extended_fr,all_metadata):
+        for state in extended_fr:
+            for substate in extended_fr[state]:
+                extended[substate] = extended.get(substate,{})
+                for v in extended_fr[state][substate]:
+                    prev_fr = extended[substate].get('FR',[])
+                    prev_fr.append(v)
+                    extended[substate]['FR'] = prev_fr
+                    
+                    prev_metadata = extended[substate].get('metadata',[])
+                    prev_metadata.append(metadata)
+                    extended[substate]['metadata'] = prev_metadata
+    return extended
 
 
 def process_session(base_folder: Union[Path, str] = upath['base_folder'],
@@ -355,9 +358,9 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     states = load.sleep_scoring(md, discard=discarded_states)
     states['SLEEP'] = states['NREM'].union(states['REM'])
 
-    fr_extended = fr_across_extended(
-        neurons, metadata, extended_params, states, 1)
+    fr_extended = fr_across_extended(neurons, metadata, extended_params, states, 1)
     binned_fr_extended = rebin_extended(fr_extended, 30)
+    
 
     df_states_fr = states_fr(neurons, metadata, states)
     df_rem_on = rem_on(neurons, metadata, states)
@@ -367,15 +370,11 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     df = reduce(lambda left, right: pd.merge(
         left, right, on=id_columns), all_df)
 
-    save_extended(md,binned_fr_extended,extended_params)
+    io.save_shelve('processed_data/binned_fr_extended',
+                   {md['session_name']: {'fr':binned_fr_extended,
+                                         'metadata':metadata}}, extended_params,writeback = True)
 
-    return df, binned_fr_extended
-
-
-def save_extended(md, binned_fr_extended, extended_params):
-    with shelve.open('processed_data/binned_fr_extended') as f:
-        f['extended_params'] = extended_params
-        f[f"{md['session_name']}"] = binned_fr_extended
+    return df, binned_fr_extended,metadata
 
 
 def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder']) -> Tuple:
@@ -396,26 +395,29 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder']) -
     session_list = load.session_list()
     all_df = []
     all_extended_fr = []
+    all_metadata = []
+    
     for p in tqdm(session_list.Path):
         try:
             # -> Stuff are saved using the decorator here
-            df, extended_fr = process_session(local_path=p)
+            df, extended_fr,metadata = process_session(local_path=p)
+            
             all_df.append(df)
             all_extended_fr.append(extended_fr)
+            all_metadata.append(metadata)
         except:
             print(f'{p} not taken care of because bug')
+    extended_fr = merge_extended(all_extended_fr,all_metadata)
 
-    extended_fr = merge_extended(all_extended_fr)
-
-    with shelve.open('processed_data/binned_fr_extended') as f:
-        f['merged_binned_fr_extended'] = extended_fr
+    # io.save_shelve('processed_data/binned_fr_extended',
+    #                {'all_sessions':extended_fr})
 
     return df, extended_fr
 
 
 if __name__ == "__main__":
-    df, fr = process_all_sessions()
-    # df,fr = process_session()
+    process_all_sessions()
+    # one,t,bin = process_session()
     # FIXME : SAVE DATA
     # with shelve.open('processed_data/binned_fr_extended','n') as f:
     #     print([i for i in f])
