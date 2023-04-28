@@ -23,13 +23,13 @@ def save_shelve(file_path,dict,params = None,**kwargs):
             json.dump(params,jf,indent = 4)
     
     
-    # with shelve.open(file_path.as_posix(),flag='c',**kwargs) as sf:
-    #     prev_dict = {k:v for k,v in sf.items()}
-    
-    # prev_dict.update(dict)
-    
     with shelve.open(file_path.as_posix(),flag='c',**kwargs) as sf:
-        for k,v in dict.items(): sf[k] = v
+        prev_dict = {k:v for k,v in sf.items()}
+    
+    prev_dict.update(dict)
+    
+    with shelve.open(file_path.as_posix(),flag='n',**kwargs) as sf:
+        for k,v in prev_dict.items(): sf[k] = v
 
 def load_shelve(file_path,**kwargs):
     file_path = Path(file_path)
