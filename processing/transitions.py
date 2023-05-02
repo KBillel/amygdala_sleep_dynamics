@@ -9,6 +9,7 @@ from bk import load
 from bk import stats
 from bk import compute
 from bk import plot
+from bk import io
 
 import neuroseries as nts
 
@@ -205,17 +206,26 @@ def process_session(base_folder:Union[Path,str]= upath['base_folder'],
     pd.DataFrame
         _description_
     """
-    md = load.session(base_folder,local_path)
-    states = load.sleep_scoring(md)
-    neurons,metadata = load.spikes(md)
+    session = load.session(base_folder,local_path)
+    states = load.sleep_scoring(session)
+    neurons,metadata = load.spikes(session)
     
     transitions = find_transitions(states,n_states=2,min_durations = min_durations)
     transitions.update(find_transitions(states,n_states=3,min_durations = min_durations))
     activity = compute_transitions_activity(neurons,transitions,nbins)    
     
     
-    if save: 
-        shelves_save(md, metadata, transitions, activity)
+    if save:
+        params = {'nbins':nbins,
+                  'min_durations':min_durations}
+        
+        d = {session['session_name'] : {'session':session,
+                                        'metadata':metadata,
+                                        'transitions':transitions,
+                                        'activity':activity,
+                                        'params':params}}
+
+        io.save_shelve('processed_data/transitions',dict =  d, params= params)
 
     return transitions,activity
 
@@ -225,7 +235,8 @@ def shelves_save(md, metadata, transitions, activity):
         f['transitions'] = transitions
         f['activity'] = activity
 
-def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'],**kwargs)->Tuple:
+def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'],
+                         save = False, **kwargs)->Tuple:
     """
     Run :py:func:'process_session' for all session in the dataset
 
@@ -238,7 +249,7 @@ def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'],**kwa
     -------
     _type_
         _description_
-    """
+    # """
 
     session_list = load.session_list()
     all_df = []
@@ -246,12 +257,12 @@ def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'],**kwa
     for p in tqdm(session_list.Path):
         try:
             print(p)
-            df = process_session(local_path=p,**kwargs)
+            df = process_session(local_path=p,save = save,**kwargs)
             all_df.append(df)
         except:
             print(f'{p} not taken care of because bug')
     
-
+    
     return all_df
 
 if __name__ == '__main__':
@@ -270,6 +281,6 @@ if __name__ == '__main__':
         'DROWSY':1}
     
     save = False
-    
-    process_session(nbins = nbins, min_durations=min_durations,save = save)
-
+    io.load_shelve('processed_data/transitions')
+    # process_session(nbins = nbins, min_durations=min_durations,save = save)
+    # process_all_sessions(min_durations = min_durations,nbins = nbins, save = save)

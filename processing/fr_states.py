@@ -281,8 +281,36 @@ def delta_extended(fr_extended, metadata, length_to_compute):
     df = pd.concat([metadata, df], axis=1)
     return df
 
+def collapse_substates(extended:Dict[str,list])->Dict[str,list]:
+    """
+    _summary_
 
-def merge_extended(all_extended_fr: list[Dict],all_metadata) -> Dict:
+    Parameters
+    ----------
+    extended : Dict[str,list]
+        _description_
+
+    Returns
+    -------
+    Dict[str,list]
+        _description_
+    """
+    all_extended = {}
+    for _,all_substates in extended.items():
+        all_extended.update({substate:fr for substate,fr in all_substates.items()})
+    return all_extended
+
+def concat_substates(extended:Dict[str,list],c_extended,c_metadata:pd.DataFrame)->Dict[str,Dict]:
+    for substate,l_fr in c_extended.items():
+        prev_extended = extended.get(substate,{'FR':[],
+                                               'metadata':[]})
+        prev_extended['FR'].extend(l_fr)
+        prev_extended['metadata'].extend([c_metadata]*len(l_fr))
+        extended[substate] = prev_extended
+    return extended
+
+
+def merge_extended(all_extended_fr: Dict[str,Dict],all_metadata:Dict[str,Dict]) -> Dict:
     """
     Merge output of :py:func:`process_all_session` into a simple Dict
 
@@ -298,25 +326,32 @@ def merge_extended(all_extended_fr: list[Dict],all_metadata) -> Dict:
         list of firing for extended sleep / wake
     """
     extended = {}
-    for extended_fr,metadata in zip(all_extended_fr,all_metadata):
-        for state in extended_fr:
-            for substate in extended_fr[state]:
-                extended[substate] = extended.get(substate,{})
-                for v in extended_fr[state][substate]:
-                    prev_fr = extended[substate].get('FR',[])
-                    prev_fr.append(v)
-                    extended[substate]['FR'] = prev_fr
+    for session_name,c_extended in all_extended_fr.items():
+        c_metadata = all_metadata[session_name]
+        collapsed_extended = collapse_substates(c_extended)
+        extended = concat_substates(extended,collapsed_extended,c_metadata)
+
+    # extended = {}
+    # for extended_fr,metadata in zip(all_extended_fr,all_metadata):
+    #     for state in extended_fr:
+    #         for substate in extended_fr[state]:
+    #             extended[substate] = extended.get(substate,{})
+    #             for v in extended_fr[state][substate]:
+    #                 prev_fr = extended[substate].get('FR',[])
+    #                 prev_fr.append(v)
+    #                 extended[substate]['FR'] = prev_fr
                     
-                    prev_metadata = extended[substate].get('metadata',[])
-                    prev_metadata.append(metadata)
-                    extended[substate]['metadata'] = prev_metadata
+    #                 prev_metadata = extended[substate].get('metadata',[])
+    #                 prev_metadata.append(metadata)
+    #                 extended[substate]['metadata'] = prev_metadata
+    
     return extended
 
 
 def process_session(base_folder: Union[Path, str] = upath['base_folder'],
                     local_path: Union[Path, str] = upath['example_session'],
                     discarded_states: Sequence[str] = ('DROWSY', 'WAKE'),
-                    binSize: int = 1) -> pd.DataFrame:
+                    binSize: int = 1) -> Tuple[Dict,pd.DataFrame,Dict[str,Dict],pd.DataFrame]:
     """
     Process a session with computation relative to states firing rates
 
@@ -347,15 +382,15 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
                                 'wake_th': 60*30,
                                 'sub_states': ['WAKE_HOMECAGE']}}
 
-    md = load.session(base_folder=base_folder, local_path=local_path)
+    session = load.session(base_folder=base_folder, local_path=local_path)
     discarded_states = set(discarded_states)
 
-    neurons, metadata = load.spikes(md)
+    neurons, metadata = load.spikes(session)
     metadata['SessID'] = metadata.index
 
     id_columns = list(metadata.columns)
 
-    states = load.sleep_scoring(md, discard=discarded_states)
+    states = load.sleep_scoring(session, discard=discarded_states)
     states['SLEEP'] = states['NREM'].union(states['REM'])
 
     fr_extended = fr_across_extended(neurons, metadata, extended_params, states, 1)
@@ -371,10 +406,10 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
         left, right, on=id_columns), all_df)
 
     io.save_shelve('processed_data/binned_fr_extended',
-                   {md['session_name']: {'fr':binned_fr_extended,
-                                         'metadata':metadata}}, extended_params,writeback = True)
+                   {session['session_name']: {'FR':binned_fr_extended,
+                                              'metadata':metadata}}, extended_params)
 
-    return df, binned_fr_extended,metadata
+    return session,df,binned_fr_extended,metadata
 
 
 def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder']) -> Tuple:
@@ -393,26 +428,28 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder']) -
     """
 
     session_list = load.session_list()
-    all_df = []
-    all_extended_fr = []
-    all_metadata = []
+    l_all_df = []
+    all_extended_fr = {}
+    all_metadata = {}
     
     for p in tqdm(session_list.Path):
         try:
             # -> Stuff are saved using the decorator here
-            df, extended_fr,metadata = process_session(local_path=p)
+            session,df, extended_fr,metadata = process_session(local_path=p)
             
-            all_df.append(df)
-            all_extended_fr.append(extended_fr)
-            all_metadata.append(metadata)
+            l_all_df.append(df)
+            all_extended_fr[session['session_name']] = extended_fr
+            all_metadata[session['session_name']] = metadata
         except:
             print(f'{p} not taken care of because bug')
+    
+
+    all_df = pd.concat(l_all_df)
     extended_fr = merge_extended(all_extended_fr,all_metadata)
+    io.save_shelve('processed_data/binned_fr_extended',
+                   {'all_sessions':extended_fr})
 
-    # io.save_shelve('processed_data/binned_fr_extended',
-    #                {'all_sessions':extended_fr})
-
-    return df, extended_fr
+    return all_df, extended_fr
 
 
 if __name__ == "__main__":
@@ -421,3 +458,5 @@ if __name__ == "__main__":
     # FIXME : SAVE DATA
     # with shelve.open('processed_data/binned_fr_extended','n') as f:
     #     print([i for i in f])
+
+    data = io.load_shelve('processed_data/binned_fr_extended')

@@ -54,6 +54,7 @@ def plot_scatter_extended(extended_state:list,color:str,ax:Tuple)-> bool:
 
 
     df = pd.concat(extended_state,1)
+    print(df)
     df['Times'] = df.index.values
     df_melt = df.melt(id_vars='Times',value_name='FR')
     df_melt.dropna(inplace=True)
@@ -66,9 +67,11 @@ def plot_scatter_extended(extended_state:list,color:str,ax:Tuple)-> bool:
     y = x*reg.slope + reg.intercept 
 
     for i in df:
-        sns.scatterplot(x = df.index/1_000_000,y = df[i],color = color,ax=ax[0],alpha = 0.8,s = 10)
+        ax[0].plot(df.index/1_000_000,df[i],c = color,alpha = 0.3,lw = 0.5)
+    
     ax[0].plot(x,y,'k--')
-    ax[0].text(4000,1.2,f'r = {reg.rvalue:.3f} \np = {reg.pvalue:.4f}')
+    
+    ax[0].text(1,1,f'r = {reg.rvalue:.3f} \np = {reg.pvalue:.4f}',transform = ax[0].transAxes)
     ax[0].set_ylim(-0.75,0.75)
     ax[0].set_xlim(-500,6000)
     plot.forceAspect(ax[0])
@@ -82,7 +85,7 @@ def plot_scatter_extended(extended_state:list,color:str,ax:Tuple)-> bool:
     ax[1]
     ax[1].plot(x,y,'k--')
     ax[1].set_ylim(-0.055,0.055)
-    ax[1].set_xlim(0,4000)
+    ax[1].sharex(ax[0])
     plot.forceAspect(ax[1])
     return ax
 
@@ -112,23 +115,37 @@ def plot_fr_across_extended(extended:Dict[str,list],stru:str,types:str):
     extended : Dict[list]
         given by :py:func:`merge_extended` after running :py:func:`process_all_sessions`
     """
+    averaged_extended = {}
     for substate,extended_substate in extended.items():
+        averaged_extended[substate] = []
         for i,(fr,metadata) in enumerate(zip(extended_substate['FR'],extended_substate['metadata'])):
-            average_fr = np.nanmean(fr.values[:,(metadata.Region == stru)&(metadata.Type == types)],1)
-            extended[substate]['FR'][i] = nts.Tsd(t = fr.times(),
-                                                  d = average_fr)
+            average_fr = np.nanmean(fr.values[:,(metadata.Region == stru) & (metadata.Type == types)],1)
+            averaged_extended[substate].append(nts.Tsd(t = fr.times(),d = average_fr))
+    
+    # return averaged_extended
     fig, ax = plt.subplots(1, 7, figsize=(16, 8))
-    plot_scatter_extended(extended['NREM']['FR'], colors['NREM'], ax=ax[0:2])
-    plot_scatter_extended(extended['REM']['FR'], colors['REM'], ax=ax[2:4])
-    plot_scatter_extended(extended['WAKE_HOMECAGE']['FR'], colors['WAKE_HOMECAGE'], ax=ax[4:6])
+    plot_scatter_extended(averaged_extended['NREM'], colors['NREM'], ax=ax[0:2])
+    plot_scatter_extended(averaged_extended['REM'], colors['REM'], ax=ax[2:4])
+    plot_scatter_extended(averaged_extended['WAKE_HOMECAGE'], colors['WAKE_HOMECAGE'], ax=ax[4:6])
     plot_delta(ax[6],colors)
+    
+    for a in ax:
+        clean_axes(a)
+    
     plt.tight_layout()
     plt.show()
 
-    return extended
+    return averaged_extended
+
+def clean_axes(ax):
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.xaxis.set_ticks_position('bottom')
+    ax.yaxis.set_ticks_position('left')
+
+
 if __name__ == '__main__':
     plt.ion()
-
     extended = io.load_shelve('processed_data/binned_fr_extended')
-    test = plot_fr_across_extended(extended['all_sessions'],'BLA','Pyr')
+    averaged_extended = plot_fr_across_extended(extended['all_sessions'],'BLA','Pyr')
 
