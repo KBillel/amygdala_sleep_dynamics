@@ -20,7 +20,6 @@ def load_dataframe(name):
 
 
 def save_shelve(file_path, dict, params=None, **kwargs):
-    import numpy as np
     file_path = Path(file_path)
     if params is not None:
         with open(file_path.with_suffix('.json'), 'w') as jf:
