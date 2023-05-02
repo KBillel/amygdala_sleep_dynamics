@@ -68,7 +68,22 @@ def closest_interval(state:nts.IntervalSet,interval:nts.IntervalSet)->Tuple[nts.
     return state.iloc[idx_before],state.iloc[idx_after]
 
 
-def check_continuity(block, cont_th=1.5):
+def check_continuity(block:nts.IntervalSet, cont_th:float=1.5)->bool:
+    """
+    Check if there are holes longer than cont_th in the intervals.
+
+    Parameters
+    ----------
+    block : nts.IntervalSet
+        block of interval set to be tested
+    cont_th : float, optional
+        , by default 1.5
+
+    Returns
+    -------
+    not is_hole : bool
+        Return True if not gap in the intervals
+    """
     cont_th_us = cont_th * 1_000_000
     starts = block['start'].values
     stops = block['end'].values
@@ -77,7 +92,7 @@ def check_continuity(block, cont_th=1.5):
     return not is_hole
 
 
-def find_transitions(states:Dict[str,nts.IntervalSet], n_states=2, min_durations:Dict[str,int]=None)->list[pd.DataFrame]:
+def find_transitions(states:Dict[str,nts.IntervalSet], n_states:int=2, min_durations:Dict[str,int]=None)->list[pd.DataFrame]:
     """
     This function compute timing of transitions from a state to another. 
 
@@ -163,19 +178,33 @@ def compute_transitions_activity(neurons:ArrayLike,transitions:dict[list[nts.Int
     return activity
 
 
-def plot_all_intervals(states):
-    fig,ax = plt.subplots(2,1)
-    plot.intervals(states['NREM'],'grey',ax =ax[0])
-    plot.intervals(states['REM'],'orange',ax =ax[0])
-    plot.intervals(states['WAKE_HOMECAGE'],'cyan',ax =ax[0])
-
-
 def process_session(base_folder:Union[Path,str]= upath['base_folder'],
                     local_path:Union[Path,str]=upath['example_session'],
-                    nbins=None,
-                    min_durations=None,
-                    save = False)->pd.DataFrame:
-    
+                    nbins:Dict[str,int]=None,
+                    min_durations:Dict[str,int]=None,
+                    save:bool = False)->pd.DataFrame:
+    """
+    Process a session with computation relative to firing rates at transitions
+
+
+    Parameters
+    ----------
+    base_folder : Union[Path,str], optional
+        Path to the dataset, by default upath['base_folder']
+    local_path : Union[Path,str], optional
+        Relative path to the session, by default upath['example_session']
+    nbins : Dict[str,int], optional
+        Number of bins to divide each epochs, by default None
+    min_durations : _type_, optional
+        Minimum duration of each states to integrated in the analysis, by default None
+    save : bool, optional
+        by default False
+
+    Returns
+    -------
+    pd.DataFrame
+        _description_
+    """
     md = load.session(base_folder,local_path)
     states = load.sleep_scoring(md)
     neurons,metadata = load.spikes(md)
@@ -203,7 +232,7 @@ def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'],**kwa
     Parameters
     ----------
     base_folder : Union[Path,str], optional
-        _description_, by default upath['base_folder']
+        Path to the dataset, by default upath['base_folder']
 
     Returns
     -------
