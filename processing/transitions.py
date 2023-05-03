@@ -18,58 +18,12 @@ from functools import reduce
 import shelve
 
 from pathlib import Path
-from typing import Union, Optional,Tuple, Dict, Sequence
+from typing import Union, Optional, Tuple, Dict, Sequence
 from numpy.typing import ArrayLike
 
 
-def in_state(t:int,states:Dict[str,nts.IntervalSet])->set:
-    """
-    Return what intervals of states t is inside. 
 
-    Parameters
-    ----------
-    t : int
-        time to test
-    states : Dict[str,nts.Intervalset]
-        states as given by :py:func:`load.intervals`
-
-    Returns
-    -------
-    set(l_states)
-        set of states in which t fits
-    """
-    t = nts.Ts(t,dtype = 'float64')
-    l_states = []
-    for state,intervals in states.items():
-        if np.all(np.isnan(intervals.in_interval(t))):
-            continue
-        else:
-            l_states.append(state)
-    return set(l_states)
-
-def closest_interval(state:nts.IntervalSet,interval:nts.IntervalSet)->Tuple[nts.IntervalSet]:
-    """
-    Return closest left and right interval in state of state
-
-    Parameters
-    ----------
-    state : nts.IntervalSet
-        state to look for interval
-    interval : nts.IntervalSet
-        interval to look left and right
-
-    Returns
-    -------
-    Tuple[nts.IntervalSet]
-        closest left and right intervals. 
-    """
-    idx_before = np.argmin(np.abs(state.end - interval.start))
-    idx_after = np.argmin(np.abs(state.start - interval.end))
-
-    return state.iloc[idx_before],state.iloc[idx_after]
-
-
-def check_continuity(block:nts.IntervalSet, cont_th:float=1.5)->bool:
+def check_continuity(block: nts.IntervalSet, cont_th: float = 1.5) -> bool:
     """
     Check if there are holes longer than cont_th in the intervals.
 
@@ -93,7 +47,9 @@ def check_continuity(block:nts.IntervalSet, cont_th:float=1.5)->bool:
     return not is_hole
 
 
-def find_transitions(states:Dict[str,nts.IntervalSet], n_states:int=2, min_durations:Dict[str,int]=None)->list[pd.DataFrame]:
+def find_transitions(states: Dict[str, nts.IntervalSet],
+                     n_states: int = 2, 
+                     min_durations: Dict[str, int] = None) -> list[pd.DataFrame]:
     """
     This function compute timing of transitions from a state to another. 
 
@@ -115,7 +71,8 @@ def find_transitions(states:Dict[str,nts.IntervalSet], n_states:int=2, min_durat
     list[pd.Dataframe]
         List of dataframe. Each DataFrame contains a transition event
     """
-    states = {name: intervals for name, intervals in states.items() if name != 'WAKE'}
+    states = {name: intervals for name,
+              intervals in states.items() if name != 'WAKE'}
     l_state_df = []
     for name, intervals in states.items():
         intervals = intervals.copy()
@@ -123,11 +80,11 @@ def find_transitions(states:Dict[str,nts.IntervalSet], n_states:int=2, min_durat
         l_state_df.append(intervals)
     state_df = pd.concat(l_state_df)
     state_df.sort_values(by='start', inplace=True)
-    state_df.reset_index(drop = True, inplace=True)
+    state_df.reset_index(drop=True, inplace=True)
     for irow, row in state_df.iterrows():
         if row['end'] - row['start'] < min_durations[row['state']]*1_000_000:
             state_df.loc[irow, 'state'] = 'HOLE'
-            
+
     transitions = {}
     n_rows = len(state_df)
     for irow, row in state_df.iterrows():
@@ -143,7 +100,10 @@ def find_transitions(states:Dict[str,nts.IntervalSet], n_states:int=2, min_durat
         transitions[trans_name] = prev_trans
     return transitions
 
-def compute_transitions_activity(neurons:ArrayLike,transitions:dict[list[nts.IntervalSet]],nbins:Dict[str,int])->ArrayLike:
+
+def compute_transitions_activity(neurons: ArrayLike, 
+                                 transitions: dict[list[nts.IntervalSet]], 
+                                 nbins: Dict[str, int]) -> ArrayLike:
     """
     Function compute the normalized activity for each neurons for all transitions
 
@@ -162,15 +122,16 @@ def compute_transitions_activity(neurons:ArrayLike,transitions:dict[list[nts.Int
         _description_
     """
     activity = {}
-    for tr_name,tr_l_intervals in transitions.items():
+    for tr_name, tr_l_intervals in transitions.items():
         fr_array_tr = []
         for interval in tr_l_intervals:
             l_spikes = []
-            for irow,row in interval.iterrows():
+            for irow, row in interval.iterrows():
                 start_s = (row.start / 1_000_000)
                 end_s = (row.end / 1_000_000)
                 delta_t = (end_s - start_s) / nbins[row['state']]
-                t,b = compute.binSpikes(neurons,start = start_s,stop = end_s,nbins = nbins[row['state']])
+                t, b = compute.binSpikes(
+                    neurons, start=start_s, stop=end_s, nbins=nbins[row['state']])
                 b = b / delta_t
                 l_spikes.append(b)
             fr_array = np.hstack(l_spikes)
@@ -179,11 +140,31 @@ def compute_transitions_activity(neurons:ArrayLike,transitions:dict[list[nts.Int
     return activity
 
 
-def process_session(base_folder:Union[Path,str]= upath['base_folder'],
-                    local_path:Union[Path,str]=upath['example_session'],
-                    nbins:Dict[str,int]=None,
-                    min_durations:Dict[str,int]=None,
-                    save:bool = False)->pd.DataFrame:
+def save_data(session: Dict, 
+              metadata: pd.DataFrame, 
+              transitions: Dict[str, nts.IntervalSet], 
+              activity: Dict[str, ArrayLike],
+              nbins: Dict[str, int], 
+              min_durations: Dict[str, int]) -> None:
+    
+    params = {'nbins': nbins,
+              'min_durations': min_durations}
+
+    d = {'unique_sessions': {session['session_name']: {'session':session,
+                                                       'metadata': metadata,
+                                                       'transitions': transitions,
+                                                       'activity': activity,
+                                                       'params': params}}}
+
+    io.save_shelve('processed_data/transitions', dict=d, params=params)
+
+
+def process_session(base_folder: Union[Path, str] = upath['base_folder'],
+                    local_path: Union[Path, str] = upath['example_session'],
+                    nbins: Dict[str, int] = None,
+                    min_durations: Dict[str, int] = None,
+                    save: bool = False,
+                    force: bool = False) -> pd.DataFrame:
     """
     Process a session with computation relative to firing rates at transitions
 
@@ -206,37 +187,84 @@ def process_session(base_folder:Union[Path,str]= upath['base_folder'],
     pd.DataFrame
         _description_
     """
-    session = load.session(base_folder,local_path)
+    session = load.session(base_folder, local_path)
+    if not force:
+        data = io.load_shelve('processed_data/transitions')
+        if ('unique_sessions' in data) and (session['session_name'] in data['unique_sessions']):
+            c_data = data['unique_sessions'][session['session_name']]
+            return c_data['session'], c_data['metadata'], c_data['transitions'], c_data['activity']
+
     states = load.sleep_scoring(session)
-    neurons,metadata = load.spikes(session)
-    
-    transitions = find_transitions(states,n_states=2,min_durations = min_durations)
-    transitions.update(find_transitions(states,n_states=3,min_durations = min_durations))
-    activity = compute_transitions_activity(neurons,transitions,nbins)    
-    
-    
+    neurons, metadata = load.spikes(session)
+
+    transitions = find_transitions(
+        states, n_states=2, min_durations=min_durations)
+    transitions.update(find_transitions(
+        states, n_states=3, min_durations=min_durations))
+    activity = compute_transitions_activity(neurons, transitions, nbins)
+
     if save:
-        params = {'nbins':nbins,
-                  'min_durations':min_durations}
-        
-        d = {session['session_name'] : {'session':session,
-                                        'metadata':metadata,
-                                        'transitions':transitions,
-                                        'activity':activity,
-                                        'params':params}}
+        save_data(session,metadata, transitions, activity,nbins, min_durations)
 
-        io.save_shelve('processed_data/transitions',dict =  d, params= params)
+    return session, metadata, transitions, activity
 
-    return transitions,activity
 
-def shelves_save(md, metadata, transitions, activity):
-    with shelve.open(f'{md["session_name"]}-transitions_activity') as f:
-        f['metadata'] = metadata
-        f['transitions'] = transitions
-        f['activity'] = activity
+def append_transitions(concatenated_transitions:Dict[str,Dict], c_transitions:Dict)->Dict[str,Dict]:
+    """
+    Append to concatened_transitions activity and metadata for all transitions_name
 
-def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'],
-                         save = False, **kwargs)->Tuple:
+    Parameters
+    ----------
+    concatenated_transitions : Dict[str,Dict]
+        Dict with all transitions activity and metadata
+    c_transitions : Dict
+        current block of data to be append
+
+    Returns
+    -------
+    Dict[str,Dict]
+    """
+    c_metadata = c_transitions['metadata']
+    for transitions_name, c_activity in c_transitions['activity'].items():
+        prev_activity = concatenated_transitions.get(transitions_name,{'activity':[],
+                                                       'metadata':[]})
+        prev_activity['activity'].append(np.nanmean(c_activity, 2)) #Average for all same transitions for each neuron
+        prev_activity['metadata'].append(c_metadata)
+        concatenated_transitions[transitions_name] = prev_activity
+    return concatenated_transitions
+
+
+def merge_all_sessions(all_sessions:Dict[str,Dict])->Dict[str,Dict]:
+    """
+    During process_all_session, average each neuron for all transition of the same kind
+    Merge all the sessions in the same dict
+
+    Parameters
+    ----------
+    all_sessions : Dict[str,Dict]
+        session_name :dict from :py:func:'process_session'
+
+    Returns
+    -------
+    Dict[str,Dict]
+        transition_name
+            activity[n_neurons,nbins]
+            metadata[n_neurons,Rat,Day,Shank,ID,Region,Type]
+    """
+    concatenated_transitions = {}
+    for _, c_transitions in all_sessions.items():
+        concatenated_transitions = append_transitions(concatenated_transitions, c_transitions)
+    
+    for transition_name,c_transitions in concatenated_transitions.items():
+        concatenated_transitions[transition_name]['activity'] = np.vstack(c_transitions['activity'])
+        concatenated_transitions[transition_name]['metadata'] = pd.concat(c_transitions['metadata'])
+
+
+    return concatenated_transitions
+
+
+def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],
+                         save=False,force = False, **kwargs) -> Tuple:
     """
     Run :py:func:'process_session' for all session in the dataset
 
@@ -252,35 +280,48 @@ def process_all_sessions(base_folder:Union[Path,str]= upath['base_folder'],
     # """
 
     session_list = load.session_list()
-    all_df = []
-    all_extended_fr = []
+
+    all_sessions = {}
+
     for p in tqdm(session_list.Path):
         try:
             print(p)
-            df = process_session(local_path=p,save = save,**kwargs)
-            all_df.append(df)
+            c_session, c_metadata, c_transitions, c_activity = process_session(local_path=p, 
+                                                                               save=save, 
+                                                                               force=force,
+                                                                               **kwargs)
+            all_sessions[c_session['session_name']] = {'metadata': c_metadata,
+                                                       'transitions': c_transitions,
+                                                       'activity': c_activity}
         except:
             print(f'{p} not taken care of because bug')
-    
-    
-    return all_df
+
+    merged = merge_all_sessions(all_sessions)
+    io.save_shelve('processed_data/transitions',
+                    {'merged_sessions':merged})
+
+    return all_sessions
+
 
 if __name__ == '__main__':
 
     min_durations = {
-        'NREM':200,
-        'REM':50,
-        'WAKE_HOMECAGE':200,
+        'NREM': 200,
+        'REM': 50,
+        'WAKE_HOMECAGE': 200,
         'DROWSY': 25
     }
 
     nbins = {
-        'NREM':30,
-        'REM':12,
-        'WAKE_HOMECAGE':30,
-        'DROWSY':1}
+        'NREM': 30,
+        'REM': 12,
+        'WAKE_HOMECAGE': 30,
+        'DROWSY': 1}
+
+    save = True
+    force = False
     
-    save = False
-    io.load_shelve('processed_data/transitions')
-    # process_session(nbins = nbins, min_durations=min_durations,save = save)
-    # process_all_sessions(min_durations = min_durations,nbins = nbins, save = save)
+    all_session = process_all_sessions(min_durations = min_durations,nbins = nbins, save = save,force = force)
+
+
+    # x = process_session(nbins = nbins, min_durations=min_durations,save = save)

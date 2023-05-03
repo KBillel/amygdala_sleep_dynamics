@@ -147,5 +147,5 @@ def clean_axes(ax):
 if __name__ == '__main__':
     plt.ion()
     extended = io.load_shelve('processed_data/binned_fr_extended')
-    averaged_extended = plot_fr_across_extended(extended['all_sessions'],'BLA','Pyr')
+    averaged_extended = plot_fr_across_extended(extended['merged_sessions'],'BLA','Pyr')
 

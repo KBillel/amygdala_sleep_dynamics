@@ -18,3 +18,17 @@ def states_to_longstates(states):
 def discard_border(state, t):
     state.start = state.start + (t * 1_000_000)
     state.end = state.end - (t * 1_000_000)
+
+def deep_update(source, overrides):
+    """
+    from : https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
+    Update a nested dictionary or similar mapping.
+    Modify ``source`` in place.
+    """
+    for key, value in overrides.items():
+        if isinstance(value, dict) and value:
+            returned = deep_update(source.get(key, {}), value)
+            source[key] = returned
+        else:
+            source[key] = overrides[key]
+    return source

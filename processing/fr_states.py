@@ -330,28 +330,23 @@ def merge_extended(all_extended_fr: Dict[str,Dict],all_metadata:Dict[str,Dict]) 
         c_metadata = all_metadata[session_name]
         collapsed_extended = collapse_substates(c_extended)
         extended = concat_substates(extended,collapsed_extended,c_metadata)
-
-    # extended = {}
-    # for extended_fr,metadata in zip(all_extended_fr,all_metadata):
-    #     for state in extended_fr:
-    #         for substate in extended_fr[state]:
-    #             extended[substate] = extended.get(substate,{})
-    #             for v in extended_fr[state][substate]:
-    #                 prev_fr = extended[substate].get('FR',[])
-    #                 prev_fr.append(v)
-    #                 extended[substate]['FR'] = prev_fr
-                    
-    #                 prev_metadata = extended[substate].get('metadata',[])
-    #                 prev_metadata.append(metadata)
-    #                 extended[substate]['metadata'] = prev_metadata
     
     return extended
 
+def save_data(session, metadata, binned_fr_extended,params):
+
+    d = {'unique_sessions':{session['session_name'] :{'session':session,
+                                                      'FR':binned_fr_extended,
+                                                      'metadata':metadata,
+                                                      'params':params}}}
+    
+    io.save_shelve('processed_data/binned_fr_extended',dict = d,params = params)
 
 def process_session(base_folder: Union[Path, str] = upath['base_folder'],
                     local_path: Union[Path, str] = upath['example_session'],
                     discarded_states: Sequence[str] = ('DROWSY', 'WAKE'),
-                    binSize: int = 1) -> Tuple[Dict,pd.DataFrame,Dict[str,Dict],pd.DataFrame]:
+                    binSize: int = 1,
+                    save:bool = False) -> Tuple[Dict,pd.DataFrame,Dict[str,Dict],pd.DataFrame]:
     """
     Process a session with computation relative to states firing rates
 
@@ -405,14 +400,12 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     df = reduce(lambda left, right: pd.merge(
         left, right, on=id_columns), all_df)
 
-    io.save_shelve('processed_data/binned_fr_extended',
-                   {session['session_name']: {'FR':binned_fr_extended,
-                                              'metadata':metadata}}, extended_params)
+    if save:
+        save_data(session, metadata, binned_fr_extended,extended_params)
 
     return session,df,binned_fr_extended,metadata
 
-
-def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder']) -> Tuple:
+def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],save = False,**kwargs) -> Tuple:
     """
     Run :py:func:'process_session' for all session in the dataset
 
@@ -435,7 +428,7 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder']) -
     for p in tqdm(session_list.Path):
         try:
             # -> Stuff are saved using the decorator here
-            session,df, extended_fr,metadata = process_session(local_path=p)
+            session,df, extended_fr,metadata = process_session(local_path=p,save=save)
             
             l_all_df.append(df)
             all_extended_fr[session['session_name']] = extended_fr
@@ -445,17 +438,16 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder']) -
     
 
     all_df = pd.concat(l_all_df)
-    extended_fr = merge_extended(all_extended_fr,all_metadata)
+    merged_extended = merge_extended(all_extended_fr,all_metadata)
     io.save_shelve('processed_data/binned_fr_extended',
-                   {'all_sessions':extended_fr})
+                   {'merged_sessions':merged_extended})
 
-    return all_df, extended_fr
+    return all_df, merged_extended
 
 
 if __name__ == "__main__":
-    process_all_sessions()
+    process_all_sessions(save = True)
     # one,t,bin = process_session()
-    # FIXME : SAVE DATA
     # with shelve.open('processed_data/binned_fr_extended','n') as f:
     #     print([i for i in f])
 

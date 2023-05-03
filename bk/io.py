@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import shelve
 
+from bk.misc import deep_update
 from pathlib import Path
 
 
@@ -20,6 +21,7 @@ def load_dataframe(name):
 
 
 def save_shelve(file_path, dict, params=None, **kwargs):
+
     file_path = Path(file_path)
     if params is not None:
         with open(file_path.with_suffix('.json'), 'w') as jf:
@@ -28,7 +30,7 @@ def save_shelve(file_path, dict, params=None, **kwargs):
     with shelve.open(file_path.as_posix(), flag='c', **kwargs) as sf:
         prev_dict = {k: v for k, v in sf.items()}
 
-    prev_dict.update(dict)
+    deep_update(prev_dict,dict)
     with shelve.open(file_path.as_posix(), flag='n', **kwargs) as sf:
         for k, v in prev_dict.items():
             sf[k] = v
