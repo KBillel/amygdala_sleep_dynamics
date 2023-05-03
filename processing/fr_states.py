@@ -334,6 +334,16 @@ def merge_extended(all_extended_fr: Dict[str,Dict],all_metadata:Dict[str,Dict]) 
     return extended
 
 def save_data(session, metadata, binned_fr_extended,params):
+    """
+    Save data of :py:func:'process_session' in a shelve
+
+    Parameters
+    ----------
+    session : _type_
+    metadata : _type_
+    binned_fr_extended : _type_
+    params : _type_
+    """
 
     d = {'unique_sessions':{session['session_name'] :{'session':session,
                                                       'FR':binned_fr_extended,
@@ -346,6 +356,7 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
                     local_path: Union[Path, str] = upath['example_session'],
                     discarded_states: Sequence[str] = ('DROWSY', 'WAKE'),
                     binSize: int = 1,
+                    params:Dict = {},
                     save:bool = False) -> Tuple[Dict,pd.DataFrame,Dict[str,Dict],pd.DataFrame]:
     """
     Process a session with computation relative to states firing rates
@@ -370,12 +381,6 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
         pInc is the probability of increased FR during REM
         pDec is the probability of decrease FR during REM
     """
-    extended_params = {'sleep': {'sleep_th': 60*30,
-                                 'wake_th': 60,
-                                 'sub_states': ['NREM', 'REM']},
-                       'wake': {'sleep_th': 60,
-                                'wake_th': 60*30,
-                                'sub_states': ['WAKE_HOMECAGE']}}
 
     session = load.session(base_folder=base_folder, local_path=local_path)
     discarded_states = set(discarded_states)
@@ -388,7 +393,7 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     states = load.sleep_scoring(session, discard=discarded_states)
     states['SLEEP'] = states['NREM'].union(states['REM'])
 
-    fr_extended = fr_across_extended(neurons, metadata, extended_params, states, 1)
+    fr_extended = fr_across_extended(neurons, metadata, params, states, binSize)
     binned_fr_extended = rebin_extended(fr_extended, 30)
     
 
@@ -401,7 +406,7 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
         left, right, on=id_columns), all_df)
 
     if save:
-        save_data(session, metadata, binned_fr_extended,extended_params)
+        save_data(session, metadata, binned_fr_extended,params)
 
     return session,df,binned_fr_extended,metadata
 
@@ -446,7 +451,15 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],sa
 
 
 if __name__ == "__main__":
-    process_all_sessions(save = True)
+
+    params = {'sleep': {'sleep_th': 60*30,
+                        'wake_th': 60,
+                        'sub_states': ['NREM', 'REM']},
+              'wake': {'sleep_th': 60,
+                       'wake_th': 60*30,
+                       'sub_states': ['WAKE_HOMECAGE']}}
+    
+    process_all_sessions(params = params, save = True)
     # one,t,bin = process_session()
     # with shelve.open('processed_data/binned_fr_extended','n') as f:
     #     print([i for i in f])
