@@ -146,6 +146,18 @@ def save_data(session: Dict,
               activity: Dict[str, ArrayLike],
               nbins: Dict[str, int], 
               min_durations: Dict[str, int]) -> None:
+    """
+    Save the data output by :py:func:'process_session' in a shelve
+
+    Parameters
+    ----------
+    session : Dict
+    metadata : pd.DataFrame
+    transitions : Dict[str, nts.IntervalSet]
+    activity : Dict[str, ArrayLike]
+    nbins : Dict[str, int]
+    min_durations : Dict[str, int]
+    """
     
     params = {'nbins': nbins,
               'min_durations': min_durations}
@@ -322,6 +334,3 @@ if __name__ == '__main__':
     force = False
     
     all_session = process_all_sessions(min_durations = min_durations,nbins = nbins, save = save,force = force)
-
-
-    # x = process_session(nbins = nbins, min_durations=min_durations,save = save)

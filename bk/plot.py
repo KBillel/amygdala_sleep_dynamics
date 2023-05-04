@@ -108,3 +108,9 @@ def forceAspect(ax,aspect=1):
     asp = abs((xmax-xmin)/(ymax-ymin))/aspect
 
     ax.set_aspect(asp)
+
+def clean_axes(ax):
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.xaxis.set_ticks_position('bottom')
+    ax.yaxis.set_ticks_position('left')

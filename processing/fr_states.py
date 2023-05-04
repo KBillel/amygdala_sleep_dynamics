@@ -458,10 +458,5 @@ if __name__ == "__main__":
               'wake': {'sleep_th': 60,
                        'wake_th': 60*30,
                        'sub_states': ['WAKE_HOMECAGE']}}
-    
+    save = True
     process_all_sessions(params = params, save = True)
-    # one,t,bin = process_session()
-    # with shelve.open('processed_data/binned_fr_extended','n') as f:
-    #     print([i for i in f])
-
-    data = io.load_shelve('processed_data/binned_fr_extended')
