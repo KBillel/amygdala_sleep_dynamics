@@ -156,10 +156,10 @@ def fr_across_extended_one_state(neurons: ArrayLike,
             current_state = nts.IntervalSet(s, e)
             state_intervals = states[state].intersect(current_state)
             # Only REM/NREM or WAKE_HOMECAGE of this extended
-
             act = compute.binSpikes(neurons, binSize, as_Tsd=True).restrict(state_intervals)
             act = compute.nts_zscore(act)
-            act.index = act.times() - act.index.values[0]
+            # act.index = act.times() - act.index.values[0] # Is this wrong #TODO check if wrong IMPORTANT
+            act.index = act.times() - s
             # Reset time of act to zero to start counting from beggining of extended
             # average_act = nts.Tsd(act.times(),np.nanmean(act.values,1))
 
@@ -233,7 +233,6 @@ def states_fr(neurons: ArrayLike, metadata: pd.DataFrame, states: Dict[str, nts.
 
     return pd.concat((metadata, fr_states), axis=1)
 
-
 @df_saver(force=FORCE)
 def rem_on(neurons: ArrayLike, metadata: pd.DataFrame, states: Dict[str, nts.IntervalSet]) -> pd.DataFrame:
     """
@@ -257,7 +256,6 @@ def rem_on(neurons: ArrayLike, metadata: pd.DataFrame, states: Dict[str, nts.Int
     """
     poisson = stats.poisson_test(neurons, states['REM'], states['NREM'])
     return pd.concat((metadata, poisson), axis=1)
-
 
 @df_saver(args_to_save=['length_to_compute'], force=FORCE)
 def delta_extended(fr_extended, metadata, length_to_compute):
@@ -308,7 +306,6 @@ def concat_substates(extended:Dict[str,list],c_extended,c_metadata:pd.DataFrame)
         prev_extended['metadata'].extend([c_metadata]*len(l_fr))
         extended[substate] = prev_extended
     return extended
-
 
 def merge_extended(all_extended_fr: Dict[str,Dict],all_metadata:Dict[str,Dict]) -> Dict:
     """
@@ -410,7 +407,7 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
 
     return session,df,binned_fr_extended,metadata
 
-def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],save = False,**kwargs) -> Tuple:
+def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],params = {},save = False,**kwargs) -> Tuple:
     """
     Run :py:func:'process_session' for all session in the dataset
 
@@ -433,7 +430,7 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],sa
     for p in tqdm(session_list.Path):
         try:
             # -> Stuff are saved using the decorator here
-            session,df, extended_fr,metadata = process_session(local_path=p,save=save)
+            session,df, extended_fr,metadata = process_session(local_path=p,params = params,save=save)
             
             l_all_df.append(df)
             all_extended_fr[session['session_name']] = extended_fr
@@ -449,7 +446,6 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],sa
 
     return all_df, merged_extended
 
-
 if __name__ == "__main__":
 
     params = {'sleep': {'sleep_th': 60*30,
@@ -460,3 +456,4 @@ if __name__ == "__main__":
                        'sub_states': ['WAKE_HOMECAGE']}}
     save = True
     process_all_sessions(params = params, save = True)
+    # process_session(params=params, save = True)

@@ -64,3 +64,12 @@ Here is provided a diagram showing how each shelve is organized :
     - activity: *ndarray* (neurons,time) averaged firing rates across transitions for all neurons
     - metadata: *pd.DataFrame* contains the metadata of each neurons
   - REM-NREM
+
+### network_metrics
+
+- unique_sessions: *Dict* with all individual sessions
+  - Rat-08-20130708: *Dict* with output of the process_session generating this file
+    - session: *Dict* from bk.load.session
+    - eib: *np.array*
+    - cv: *np.array*
+    - sync: *np.array*

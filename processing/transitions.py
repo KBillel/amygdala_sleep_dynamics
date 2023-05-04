@@ -209,10 +209,9 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     states = load.sleep_scoring(session)
     neurons, metadata = load.spikes(session)
 
-    transitions = find_transitions(
-        states, n_states=2, min_durations=min_durations)
-    transitions.update(find_transitions(
-        states, n_states=3, min_durations=min_durations))
+    transitions = find_transitions(states, n_states=1, min_durations=min_durations)
+    transitions.update(find_transitions(states, n_states=2, min_durations=min_durations))
+    transitions.update(find_transitions(states, n_states=3, min_durations=min_durations))
     activity = compute_transitions_activity(neurons, transitions, nbins)
 
     if save:
@@ -334,3 +333,4 @@ if __name__ == '__main__':
     force = False
     
     all_session = process_all_sessions(min_durations = min_durations,nbins = nbins, save = save,force = force)
+    # process_session()

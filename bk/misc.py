@@ -32,3 +32,13 @@ def deep_update(source, overrides):
         else:
             source[key] = overrides[key]
     return source
+
+
+def filter_neurons(activity,metadata,stru,types,finite):
+    mask_stru = metadata.Region == stru
+    mask_types = metadata.Type == types
+    mask = mask_stru & mask_types
+    if finite:
+        mask_finite = np.all(np.isfinite(activity),1)
+        mask = mask & mask_finite
+    return activity[mask,:].copy(), metadata[mask].copy()
