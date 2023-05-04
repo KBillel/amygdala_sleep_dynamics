@@ -15,10 +15,8 @@ CSV files are formated in the following format :
 
 ## Shelves files (.dat ; .dir ; .bak)
 
-For more complicated files structures we decided to use python shelves to store the data.
-
-A shelve is a persistent dictionary.
-Here is provided a diagram showing how each shelve is organized : 
+For more complicated files structures we decided to use python shelves to store the data. A shelve is a persistent dictionary.
+Here is provided a diagram showing how each shelve is organized :
 
 ### binned_fr_extended
 
@@ -30,8 +28,8 @@ binned_fr_extended:
     - FR
       - sleep
         - NREM (List)
-          1) TsdFrame: firing rates of individual neurons for NREM during ES1 of this session
-          2) TsdFrame: firing rates of individual neurons for NREM during ES2 of this session
+            1) TsdFrame: firing rates of individual neurons for NREM during ES1 of this session
+            2) TsdFrame: firing rates of individual neurons for NREM during ES2 of this session
         - REM same as NREM key
       - wake
         - WAKE_HOMECAGE - same as NREM key in sleep
