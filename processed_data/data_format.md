@@ -15,7 +15,7 @@ CSV files are formated in the following format :
 
 ## Shelves files (.dat ; .dir ; .bak)
 
-For more complicated files structures we decided to use python shelves to store the data. A shelve is a persistent dictionary.
+For more complicated files structures we decided to use shelves to store the data. A shelve is a persistent python dictionary.
 Here is provided a diagram showing how each shelve is organized :
 *Plot are often using only the merged_session of the shelves, but individual session are kept in case*
 
