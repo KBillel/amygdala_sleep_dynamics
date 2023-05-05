@@ -9,13 +9,48 @@ import json
 
 from settings import colors
 
-def norm_baseline(activity,norm):
+from typing import Union, Optional, Tuple, Dict, Sequence
+from numpy.typing import ArrayLike
+
+def norm_baseline(activity:ArrayLike,norm:list[int])->ArrayLike:
+    """
+    Normalize each neuron in activity on the period given by norm
+
+    Parameters
+    ----------
+    activity : ArrayLike
+        [neurons,times] firing rates of the neurons see :py:func:`compute_transitions_activity`
+    norm : list[int]
+        baseline interval to compute the normalizatin
+
+    Returns
+    -------
+    ArrayLike
+        Normalized Activity
+    """
     baseline = np.nanmean(activity[:,norm[0]:norm[1]],1)
     activity = (activity.T / baseline).T
     activity *= 100
     return activity
 
-def quantile_cut(df,on,quantile_labels = ('VL','L','M','H','VH')):
+def quantile_cut(df:pd.DataFrame,on:str,quantile_labels:Sequence = ('VL','L','M','H','VH'))->pd.DataFrame:
+    """
+    Cut the population in quantiles based on a single variable.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        metadata + data dataframe
+    on : str
+        variable to cut the population on
+    quantile_labels : Sequence, optional
+        labels of each quantile (here VeryLow,Low,Medium,High and VeryHigh), by default ('VL','L','M','H','VH')
+
+    Returns
+    -------
+    pd.DataFrame
+        df with added Quantile column
+    """
     df = df.copy()
     q = len(quantile_labels)
     df.loc[:,'Quantile'] = pd.qcut(df[on],q = q,labels=quantile_labels)
@@ -23,6 +58,9 @@ def quantile_cut(df,on,quantile_labels = ('VL','L','M','H','VH')):
 
 
 def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None,norm = None,ax = None):
+
+    colors_stru = colors[stru]
+
     quantile_labels = ['VL','L','M','H','VH']
     if ax is None:
         fig,ax = plt.subplots()
@@ -41,10 +79,10 @@ def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None
         for q in quantile_labels:
             mask_q = metadata_pyr['Quantile'] == q
             y_ = np.nanmean(activity_pyr[mask_q],0)
-            ax.plot(y_,c = colors[q])
+            ax.plot(y_,c = colors_stru[q])
     else:
         y_ = np.nanmean(activity_pyr,0)
-        ax.plot(y_,c = colors[stru])
+        ax.plot(y_,c = colors_stru[stru])
         
     ax.plot(np.nanmean(activity_int,0),'k--')
 
@@ -56,6 +94,9 @@ def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None
 
 
 if __name__ == '__main__':
+
+    stru =  'Hpc'
+    
     plt.ion()
     transitions = io.load_shelve('processed_data/transitions')['merged_sessions']
     df_firing_rates = pd.read_csv('processed_data/states_fr.csv')
@@ -71,7 +112,7 @@ if __name__ == '__main__':
                                'WAKE_HOMECAGE-NREM',
                                'REM-WAKE_HOMECAGE']
 
-    fig,ax = plt.subplots(3,len(transitions_of_interest),figsize = (16,8),sharey='row',sharex='col')
+    fig,ax = plt.subplots(2,len(transitions_of_interest),figsize = (16,8),sharey='row',sharex='col')
     for i,transition_name in enumerate(transitions_of_interest):
 
         states = transition_name.split('-')
@@ -81,10 +122,10 @@ if __name__ == '__main__':
         c_activity = c_transitions['activity']
         c_metadata = pd.merge(c_transitions['metadata'],df_firing_rates,on = ['Rat','Day','Shank','Id','Region','Type'],how='left')
 
-        plot_activity_at_transitions(c_activity,c_metadata,'Hpc',norm = None,quantile='WAKE_HOMECAGE',ax=ax[0,i],bin_state = bin_state)
+        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = None,quantile='WAKE_HOMECAGE',ax=ax[0,i],bin_state = bin_state)
         ax[0,i].semilogy()
-        plot_activity_at_transitions(c_activity,c_metadata,'Hpc',norm = 'zscore',quantile='WAKE_HOMECAGE',ax=ax[1,i],bin_state = bin_state)
-        plot_activity_at_transitions(c_activity,c_metadata,'Hpc',norm = None,quantile= None,ax=ax[2,i],bin_state = bin_state)
+        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'zscore',quantile='WAKE_HOMECAGE',ax=ax[1,i],bin_state = bin_state)
+        # plot_activity_at_transitions(c_activity,c_metadata,stru,norm = None,quantile= None,ax=ax[2,i],bin_state = bin_state)
 
         ax[0,i].set_title(transition_name)
     
@@ -94,6 +135,7 @@ if __name__ == '__main__':
 
     ax[0,0].set_ylabel('FR')
     ax[1,0].set_ylabel('FR(zscore)')
-    ax[2,0].set_ylabel('FR %baseline')
+    ax[1,0].set_ylim(-1.5,1.5)
 
     plt.tight_layout()
+    plt.savefig('plots/figures/tansitions.png')

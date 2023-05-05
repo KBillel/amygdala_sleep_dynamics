@@ -22,7 +22,26 @@ from pathlib import Path
 from typing import Union, Optional, Tuple, Dict, Sequence
 from numpy.typing import ArrayLike
 
-def compute_eib(neurons,metadata,stru,binSize):
+def compute_eib(neurons:ArrayLike,metadata:pd.DataFrame,stru:str,binSize:float)->ArrayLike:
+    """
+    Compute excitatory inhibitory balance across time for all neurons in stru.
+
+    Parameters
+    ----------
+    neurons : ArrayLike
+        list of neurons given by :py:func:`load.spikes`
+    metadata : pd.DataFrame
+        metadata as :py:func:`load.spikes`
+    stru : str
+        structure (BLA/Hpc/Pir) to select neurons from
+    binSize : float
+        binSize used for binning the spikes
+
+    Returns
+    -------
+    eib: ArrayLike
+        1d vector with EIB for the whole session
+    """
     t,bin_matrix = compute.binSpikes(neurons,binSize)
     f_bin_matrix_pyr,_ = misc.filter_neurons(bin_matrix,metadata,stru,'Pyr',True)
     f_bin_matrix_int,_ = misc.filter_neurons(bin_matrix,metadata,stru,'Int',True)
@@ -33,13 +52,56 @@ def compute_eib(neurons,metadata,stru,binSize):
     eib = m_pyr / (m_pyr+m_int)
     return eib
 
-def compute_cv(neurons,metadata,stru,binSize):
+def compute_cv(neurons:ArrayLike,metadata:pd.DataFrame,stru:str,binSize:float)->ArrayLike:
+    """
+    Compute coefficient of variations across principal neurons across time for all neurons in stru.
+
+    Parameters
+    ----------
+    neurons : ArrayLike
+        list of neurons given by :py:func:`load.spikes`
+    metadata : pd.DataFrame
+        metadata as :py:func:`load.spikes`
+    stru : str
+        structure (BLA/Hpc/Pir) to select neurons from
+    binSize : float
+        binSize used for binning the spikes
+
+    Returns
+    -------
+    CV: ArrayLike
+        1d vector with CV for the whole session
+    """
+
     t,bin_matrix = compute.binSpikes(neurons,binSize)
     f_bin_matrix_pyr,_ = misc.filter_neurons(bin_matrix,metadata,stru,'Pyr',True)
 
     return np.std(f_bin_matrix_pyr,0) / np.nanmean(f_bin_matrix_pyr,0)
 
-def compute_sync_moving_windows(neurons,metadata,stru,binSize,winSize,step):
+def compute_sync_moving_windows(neurons:ArrayLike,metadata:pd.DataFrame,stru:str,binSize:float,winSize:float,step:float)->ArrayLike:
+    """
+    Compute synchrony of principal neurons in stru across time. 
+
+    Parameters
+    ----------
+    neurons : ArrayLike
+        list of neurons given by :py:func:`load.spikes`
+    metadata : pd.DataFrame
+        metadata as :py:func:`load.spikes`
+    stru : str
+        structure (BLA/Hpc/Pir) to select neurons from
+    binSize : float
+        binSize used for binning the spikes
+    winSize : float
+        Size of the window to compute sync
+    step : float
+        step of the sliding window. If step = winSize there is no overlap
+
+    Returns
+    -------
+    ArrayLike
+        1d vector with sync for the whole session
+    """
     
     
     winSize = int(winSize/binSize) #Convert second to idx
@@ -54,7 +116,20 @@ def compute_sync_moving_windows(neurons,metadata,stru,binSize,winSize,step):
 
     return sync
 
-def compute_sync(bin_matrix):
+def compute_sync(bin_matrix:ArrayLike)->float:
+    """
+    Compute a single value of sync from a neurons x bins matrix
+
+    Parameters
+    ----------
+    bin_matrix : ArrayLike
+        matrix as given by :py:func:'compute.binSpikes'
+
+    Returns
+    -------
+    float
+        value of sync for this matrix
+    """
     corr = np.corrcoef(bin_matrix)
     np.fill_diagonal(corr,np.nan)
     sync = np.nanmean(corr)

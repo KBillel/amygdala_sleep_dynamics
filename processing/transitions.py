@@ -291,9 +291,7 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],
     # """
 
     session_list = load.session_list()
-
     all_sessions = {}
-
     for p in tqdm(session_list.Path):
         try:
             print(p)
