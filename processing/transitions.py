@@ -18,7 +18,7 @@ from functools import reduce
 import shelve
 
 from pathlib import Path
-from typing import Union, Optional, Tuple, Dict, Sequence
+from typing import Union, Optional, Tuple, Dict, List
 from numpy.typing import ArrayLike
 
 
@@ -49,7 +49,7 @@ def check_continuity(block: nts.IntervalSet, cont_th: float = 1.5) -> bool:
 
 def find_transitions(states: Dict[str, nts.IntervalSet],
                      n_states: int = 2, 
-                     min_durations: Dict[str, int] = None) -> list[pd.DataFrame]:
+                     min_durations: Dict[str, int] = None) -> dict:
     """
     This function compute timing of transitions from a state to another. 
 
@@ -57,19 +57,12 @@ def find_transitions(states: Dict[str, nts.IntervalSet],
     ----------
     states : Dict[str,nts.Intervalset]
         states as given by :py:func:`load.intervals`
-    previous_state : str, optional
-        previous_state to look for, by default 'NREM'
-    state : str, optional
-        state to which the transitions is occuring, by default 'REM'
-    next_state : str, optional
-        following state,, by default None
-    epsilon : float, optional
-        next or previous state should be at most epsilon after the end of state, by default 1.5
+    n_states : int, optional
+    min_durations : Dict, optional
 
     Returns
     -------
-    list[pd.Dataframe]
-        List of dataframe. Each DataFrame contains a transition event
+
     """
     states = {name: intervals for name,
               intervals in states.items() if name != 'WAKE'}
@@ -102,7 +95,7 @@ def find_transitions(states: Dict[str, nts.IntervalSet],
 
 
 def compute_transitions_activity(neurons: ArrayLike, 
-                                 transitions: dict[list[nts.IntervalSet]], 
+                                 transitions: Dict[str, List[nts.IntervalSet]],
                                  nbins: Dict[str, int]) -> ArrayLike:
     """
     Function compute the normalized activity for each neurons for all transitions
@@ -111,8 +104,8 @@ def compute_transitions_activity(neurons: ArrayLike,
     ----------
     neurons : ArrayLike
         list of neurons given by :py:func:`load.spikes`
-    l_transitions_intervals : list[pd.DataFrame]
-        list of transitions intervals as given by :py:func`find_transitions`
+    transitions : Dict[List[nts.IntervalSet]]
+
     nbins : Dict[str,int]
         number of bin used for each state
 

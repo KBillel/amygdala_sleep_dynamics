@@ -549,15 +549,11 @@ def laps():
     return laps
 
 
-
-
-
-
 def loadSpikeData(path, index=None, fs=20000):
-    # Adapted from Viejo github https://github.com/PeyracheLab/StarterPack/blob/master/python/wrappers.py
-    # Modified by BK 06/08/20
-    # Modification are explicit with comment
     """
+    Adapted from Viejo github https://github.com/PeyracheLab/StarterPack/blob/master/python/wrappers.py
+    Modified by BK 06/08/20
+    Modification are explicit with comment
     if the path contains a folder named /Analysis, 
     the script will look into it to load either
         - SpikeData.mat saved from matlab
@@ -565,13 +561,20 @@ def loadSpikeData(path, index=None, fs=20000):
     if not, the res and clu file will be loaded 
     and an /Analysis folder will be created to save the data
     Thus, the next loading of spike times will be faster
-    Notes :
-        If the frequency is not givne, it's assumed 20kH
-    Args:
-        path : string
+    Notes
+    ------
+    If the frequency is not givne, it's assumed 20kH
 
-    Returns:
-        dict, array    
+    Parameters
+    ----------
+    path : string
+    index
+    fs: int
+
+    Returns
+    -------
+    dict
+    array
     """
 
     #     try session:

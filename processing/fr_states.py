@@ -21,7 +21,7 @@ import inspect
 import shelve
 
 from pathlib import Path
-from typing import Union, Optional, Tuple, Dict, Sequence
+from typing import Union, Optional, Tuple, Dict, Sequence, List
 from numpy.typing import ArrayLike
 
 FORCE = False
@@ -123,7 +123,7 @@ def rebin_extended(fr_extended, binSize=30):
 def fr_across_extended_one_state(neurons: ArrayLike,
                                  states: Dict[str, nts.IntervalSet],
                                  binSize: int,
-                                 sub_states: list[str],
+                                 sub_states: List[str],
                                  extended_states: nts.IntervalSet) -> Dict[str, list]:
     """
     Compute the zscore FR during a list of extended state

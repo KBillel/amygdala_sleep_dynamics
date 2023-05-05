@@ -3,7 +3,9 @@ from getpass import getuser
 users_paths = {'billel':
                {'base_folder':Path("/mnt/electrophy/Gabrielle/GG-Dataset-Light/"),
                 # {'base_folder':Path("/media/billel/My Passeport/Gabrielle/GG-Dataset"),
-                'example_session':Path('Rat08/Rat08-20130713')}}
+                'example_session':Path('Rat08/Rat08-20130713')},
+               'remi': {'base_folder': Path('.'),
+                        'example_session': Path('.')}}
 username = getuser()
 
 upath = users_paths[username]

@@ -4,7 +4,8 @@ import scipy
 import scipy.signal
 import neuroseries as nts
 import numpy as np
-import basefunction.vBaseFunctions3 as vbf
+#Fixme: Remi: Je ne trouve pas ce package
+# import basefunction.vBaseFunctions3 as vbf
 
 from fooof import FOOOF
 from fooof.sim.gen import gen_aperiodic
@@ -52,8 +53,9 @@ def wavelet_spectrogram(lfp, fmin, fmax, nfreq):
     t = lfp.as_units('s').index.values
 
     f_wv = pow(2, np.linspace(np.log2(fmin), np.log2(fmax), nfreq))
-    output = vbf.wvSpect(lfp.values, f_wv)  # [0]
-
+    # output = vbf.wvSpect(lfp.values, f_wv)  # [0]
+    # Fixme: Other way to compute the spectrum?
+    output = None
     return f_wv, t, output
 
 
