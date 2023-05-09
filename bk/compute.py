@@ -255,10 +255,10 @@ def crosscorrelogram(neurons,binSize,win):
 
 def toIntervals(t,is_in,time_units = 'us'):
     
-    '''
+    """
     Author : BK (Inspired Michael Zugaro FMA Toolbox)
     This function convert logical vector to interval.
-    '''
+    """
     
     if is_in[-1] == 1: is_in = np.append(is_in,0)
     d_is_in = np.diff(is_in,prepend=0)
@@ -273,10 +273,11 @@ def transition(states, template, epsilon=0):
     author: BK
     states : dict of nts.Interval_set
     template : list of state.
-    epsilon : int, will drop any 
-     in which there is an epoch shorter than epsilon 's'
-    This function will find transition that match the template 
+    epsilon : int, will drop any
+    in which there is an epoch shorter than epsilon 's'
+    This function will find transition that match the template
     """
+
     if epsilon is list:
         print("eplist")
     long = pd.DataFrame()
@@ -431,7 +432,8 @@ def cumsum_ditribution(x,nBins,density = False):
     return bins,np.cumsum(counts)
 
 
-def extended(states:Dict[str,nts.IntervalSet], state:str='sleep', sleep_th:int=60*30, wake_th:int=60)->nts.IntervalSet:
+def extended(states: Dict[str, nts.IntervalSet], state: str = 'sleep',
+             sleep_th: int = 60*30, wake_th: int = 60) -> nts.IntervalSet:
     """
     Comptuted extended sleep or extended wake
 
@@ -442,16 +444,19 @@ def extended(states:Dict[str,nts.IntervalSet], state:str='sleep', sleep_th:int=6
     state : str, optional
         string 'WAKE' or 'SLEEP', by default 'sleep'
     sleep_th : int, optional
-        Amount of minimum sleep to be considered extended or maximum of sleep to not disturb WAKE, by default 60*30
+        Amount of minimum sleep to be considered extended or maximum of sleep to not disturb WAKE,
+         by default 60*30
     wake_th : int, optional
-        Amount of wake sleep to be considered extended or maximum of WAKE to not disturb sleep, by default 60
-, by default 60
+        Amount of wake sleep to be considered extended or maximum of WAKE to not disturb sleep,
+         by default 60
+
 
     Returns
     -------
     nts.IntervalSet
         extended intervals of a state
     """
+
     if state.lower() == 'sleep':
         extended = states['NREM'].union(
             states['REM']).merge_close_intervals(wake_th, time_units='s')

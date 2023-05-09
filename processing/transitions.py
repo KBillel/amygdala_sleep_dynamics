@@ -18,7 +18,7 @@ from functools import reduce
 import shelve
 
 from pathlib import Path
-from typing import Union, Optional, Tuple, Dict, Sequence
+from typing import Union, Optional, Tuple, Dict, List
 from numpy.typing import ArrayLike
 
 
@@ -83,7 +83,7 @@ def make_contigous(transition:pd.DataFrame)->pd.DataFrame:
 def find_transitions(states: Dict[str, nts.IntervalSet],
                      n_states: int = 2, 
                      min_durations: Dict[str, int] = None,
-                     contigous:bool = True) -> list[pd.DataFrame]:
+                     contigous:bool = True) -> dict:
     """
     Find all transitions in states
 
@@ -100,8 +100,7 @@ def find_transitions(states: Dict[str, nts.IntervalSet],
 
     Returns
     -------
-    list[pd.DataFrame]
-        _description_
+
     """
     states = {name: intervals for name,
               intervals in states.items() if name != 'WAKE'}
@@ -136,7 +135,7 @@ def find_transitions(states: Dict[str, nts.IntervalSet],
 
 
 def compute_transitions_activity(neurons: ArrayLike, 
-                                 transitions: dict[list[nts.IntervalSet]], 
+                                 transitions: Dict[str, List[nts.IntervalSet]],
                                  nbins: Dict[str, int]) -> ArrayLike:
     """
     Function compute the normalized activity for each neurons for all transitions
@@ -145,8 +144,8 @@ def compute_transitions_activity(neurons: ArrayLike,
     ----------
     neurons : ArrayLike
         list of neurons given by :py:func:`load.spikes`
-    l_transitions_intervals : list[pd.DataFrame]
-        list of transitions intervals as given by :py:func`find_transitions`
+    transitions : Dict[List[nts.IntervalSet]]
+
     nbins : Dict[str,int]
         number of bin used for each state
 
