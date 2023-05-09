@@ -47,29 +47,61 @@ def check_continuity(block: nts.IntervalSet, cont_th: float = 1.5) -> bool:
     return not is_hole
 
 
-def find_transitions(states: Dict[str, nts.IntervalSet],
-                     n_states: int = 2, 
-                     min_durations: Dict[str, int] = None) -> list[pd.DataFrame]:
+def make_contigous(transition:pd.DataFrame)->pd.DataFrame:
     """
-    This function compute timing of transitions from a state to another. 
+    Force interval DataFrame to become contigous so the end of each epoch match the start of the next
 
     Parameters
     ----------
-    states : Dict[str,nts.Intervalset]
-        states as given by :py:func:`load.intervals`
-    previous_state : str, optional
-        previous_state to look for, by default 'NREM'
-    state : str, optional
-        state to which the transitions is occuring, by default 'REM'
-    next_state : str, optional
-        following state,, by default None
-    epsilon : float, optional
-        next or previous state should be at most epsilon after the end of state, by default 1.5
+    transition : pd.DataFrame
+        c_block of find_transitions
+    Returns
+    -------
+    pd.DataFrame
+        contigous interval dataframe
+    """
+    s_0 = transition.start.values
+    e_0 = transition.end.values
+    state = transition.state.values
+
+    s_p1 = np.roll(s_0,-1)
+    s_p1[-1] = e_0[-1]
+
+    e_m1 = np.roll(e_0,1)
+    e_m1[0] = s_0[0]
+
+    s = (s_0 + e_m1) / 2
+    e = (e_0 + s_p1) / 2
+
+    df = {'start':s.astype(int),
+          'end':e.astype(int),
+          'state':state}
+
+    return pd.DataFrame(df)
+
+
+def find_transitions(states: Dict[str, nts.IntervalSet],
+                     n_states: int = 2, 
+                     min_durations: Dict[str, int] = None,
+                     contigous:bool = True) -> list[pd.DataFrame]:
+    """
+    Find all transitions in states
+
+    Parameters
+    ----------
+    states : Dict[str, nts.IntervalSet]
+        states as given by :py:func:`load.sleep_scoring`
+    n_states : int, optional
+        _description_, by default 2
+    min_durations : Dict[str, int], optional
+        _description_, by default None
+    contigous : bool, optional
+        _description_, by default True
 
     Returns
     -------
-    list[pd.Dataframe]
-        List of dataframe. Each DataFrame contains a transition event
+    list[pd.DataFrame]
+        _description_
     """
     states = {name: intervals for name,
               intervals in states.items() if name != 'WAKE'}
@@ -94,6 +126,8 @@ def find_transitions(states: Dict[str, nts.IntervalSet],
         is_cont = check_continuity(c_block)
         if (not is_cont) or ('HOLE' in c_block['state'].values):
             continue
+        if contigous:
+            c_block = make_contigous(c_block)
         trans_name = '-'.join(c_block['state'].values)
         prev_trans = transitions.get(trans_name, [])
         prev_trans.append(c_block)
@@ -130,8 +164,7 @@ def compute_transitions_activity(neurons: ArrayLike,
                 start_s = (row.start / 1_000_000)
                 end_s = (row.end / 1_000_000)
                 delta_t = (end_s - start_s) / nbins[row['state']]
-                t, b = compute.binSpikes(
-                    neurons, start=start_s, stop=end_s, nbins=nbins[row['state']])
+                t, b = compute.binSpikes(neurons, start=start_s, stop=end_s, nbins=nbins[row['state']])
                 b = b / delta_t
                 l_spikes.append(b)
             fr_array = np.hstack(l_spikes)
@@ -311,8 +344,10 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],
 
     return all_sessions
 
-
 if __name__ == '__main__':
+    # import cProfile
+    # import pstats
+    # from pstats import SortKey
 
     min_durations = {
         'NREM': 200,
@@ -328,7 +363,10 @@ if __name__ == '__main__':
         'DROWSY': 1}
 
     save = True
-    force = False
+    force = True
     
     all_session = process_all_sessions(min_durations = min_durations,nbins = nbins, save = save,force = force)
-    # process_session()
+    # process_session(min_durations = min_durations,nbins = nbins, save = save,force = force)
+    # cProfile.run('process_session(save= False,force = True,min_durations = min_durations,nbins=nbins)','run_transition')
+    # p = pstats.Stats('run_transition')
+    # p.sort_stats(SortKey.CUMULATIVE).print_stats(10)

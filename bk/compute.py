@@ -46,7 +46,7 @@ def binSpikes(neurons,binSize = 0.025,start = 0,stop = None,nbins = None,fast = 
     if binSize is not None:
         if binSize < 0.025 and not fast: print(f"You are using {binSize} ms bins with the function fast off. Consider using \"Fast = True\" in order to speed up the computations")
     if stop is None:
-        stop = np.max([neuron.as_units('s').index[-1] for neuron in neurons if any(neuron.index)])
+        stop = np.max([neuron.times('s')[-1] for neuron in neurons if any(neuron.index)])
     
     bins = np.arange(start,stop,binSize)
     if nbins is not None: bins = np.linspace(start,stop,nbins+1) # IF NUMBER OF BINS IS USED THIS WILL OVERWRITE binSize    
@@ -54,7 +54,7 @@ def binSpikes(neurons,binSize = 0.025,start = 0,stop = None,nbins = None,fast = 
     if not fast:
         binned = np.empty((len(neurons),len(bins)-1),dtype = 'int32')
         for i,neuron in enumerate(neurons):
-            binned[i],b = np.histogram(neuron.as_units('s').index,bins = bins,range = [start,stop])
+            binned[i],b = np.histogram(neuron.times('s'),bins = bins,range = [start,stop])
     elif fast:
         centered = False
         binned = np.zeros((len(neurons),len(bins)),dtype = np.bool)

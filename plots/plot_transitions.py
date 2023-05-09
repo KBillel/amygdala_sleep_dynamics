@@ -95,7 +95,7 @@ def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None
 
 if __name__ == '__main__':
 
-    stru =  'Hpc'
+    stru =  'BLA'
     
     plt.ion()
     transitions = io.load_shelve('processed_data/transitions')['merged_sessions']
@@ -112,7 +112,7 @@ if __name__ == '__main__':
                                'WAKE_HOMECAGE-NREM',
                                'REM-WAKE_HOMECAGE']
 
-    fig,ax = plt.subplots(2,len(transitions_of_interest),figsize = (16,8),sharey='row',sharex='col')
+    fig,ax = plt.subplots(3,len(transitions_of_interest),figsize = (16,8),sharey='row',sharex='col')
     for i,transition_name in enumerate(transitions_of_interest):
 
         states = transition_name.split('-')
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         plot_activity_at_transitions(c_activity,c_metadata,stru,norm = None,quantile='WAKE_HOMECAGE',ax=ax[0,i],bin_state = bin_state)
         ax[0,i].semilogy()
         plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'zscore',quantile='WAKE_HOMECAGE',ax=ax[1,i],bin_state = bin_state)
-        # plot_activity_at_transitions(c_activity,c_metadata,stru,norm = None,quantile= None,ax=ax[2,i],bin_state = bin_state)
+        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = [0,10],quantile= 'WAKE_HOMECAGE',ax=ax[2,i],bin_state = bin_state)
 
         ax[0,i].set_title(transition_name)
     

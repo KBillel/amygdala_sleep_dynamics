@@ -15,7 +15,7 @@
   - [x] rem_on
   - [x] delta_fr extended
   - [ ] ratio FR_REM - FR_NREM / FR_NREM + FR_REM
-  - [ ] firing_rates_within_state
+  - [x] firing_rates_within_state
   - [ ] firing_rates_at_transitions
   - [x] firing_rates_during_extended
 - [ ] Network_metrics

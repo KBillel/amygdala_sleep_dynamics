@@ -6,7 +6,7 @@
         "binSize": 5
     },
     "sync": {
-        "binSize": 0.1,
+        "binSize": 1,
         "winSize": 10,
         "step": 1
     }

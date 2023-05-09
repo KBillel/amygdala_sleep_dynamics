@@ -207,7 +207,7 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],
     -------
     _type_
         _description_
-    # """
+    """
 
     session_list = load.session_list()
     all_sessions = {}
@@ -262,7 +262,7 @@ if __name__ == '__main__':
               'cv':{
                     'binSize':5},
               'sync':{
-                    'binSize':1,
+                    'binSize':0.1,
                     'winSize':10,
                     'step':1}}
 
@@ -273,9 +273,10 @@ if __name__ == '__main__':
 
 
     # eib,cv,sync = process_session(params = params,save = True,force = True)
-    process_all_sessions(save = True,force = False,params = params)
+    process_all_sessions(save = True,force = True,params = params)
     # plt.ion()
     # fig,ax = plt.subplots(3,1)
 
     # for i,m in enumerate((eib,cv,sync)):
     #     ax[i].plot(m)
+    
