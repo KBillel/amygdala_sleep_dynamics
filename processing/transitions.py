@@ -270,7 +270,7 @@ def append_transitions(concatenated_transitions:Dict[str,Dict], c_transitions:Di
     c_metadata = c_transitions['metadata']
     for transitions_name, c_activity in c_transitions['activity'].items():
         prev_activity = concatenated_transitions.get(transitions_name,{'activity':[],
-                                                       'metadata':[]})
+                                                                       'metadata':[]})
         prev_activity['activity'].append(np.nanmean(c_activity, 2)) #Average for all same transitions for each neuron
         prev_activity['metadata'].append(c_metadata)
         concatenated_transitions[transitions_name] = prev_activity

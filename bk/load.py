@@ -140,8 +140,7 @@ def spikes(metadata:dict)-> Tuple[ArrayLike,pd.DataFrame]:
     return loadSpikeData(metadata['session_path'])
 
 
-def sleep_scoring(metadata:dict,discard:Optional[Sequence[str]] = None):
-    #TODO Doc string
+def sleep_scoring(metadata:dict,discard:Optional[Sequence[str]] = None,drop_short_intervals = None):
     
     if discard is None:
         discard = []
@@ -154,7 +153,17 @@ def sleep_scoring(metadata:dict,discard:Optional[Sequence[str]] = None):
     for d in discard:
         sleep_scoring_intervals.pop(d)
 
-    return sleep_scoring_intervals
+    for state,i_vals in sleep_scoring_intervals.items():
+        i_vals['state'] = state
+    
+    if drop_short_intervals is None:
+        return sleep_scoring_intervals
+
+    dropped_states = {}
+    for state,i_vals in sleep_scoring_intervals.items():
+        dropped_states[state] = i_vals.drop_short_intervals(drop_short_intervals.get(state,2_000_000),time_units = 's').reset_index(drop = True)
+    return dropped_states
+
 
 def intervals(metadata:dict,name:Union[str,Path],discard:Optional[Sequence[str]] = None) -> Dict[str,nts.IntervalSet]:
     """

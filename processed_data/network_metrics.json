@@ -3,7 +3,7 @@
         "binSize": 10
     },
     "cv": {
-        "binSize": 5
+        "binSize": 10
     },
     "sync": {
         "binSize": 0.1,

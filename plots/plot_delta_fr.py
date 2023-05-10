@@ -102,7 +102,7 @@ def plot_delta(ax=None,colors = None, fr_csv='processed_data/delta_extended.csv'
     df = pd.read_csv(fr_csv)
     sns.barplot(df[(df.Region == 'BLA') & (df.Type == 'Pyr')],order=['NREM','REM','WAKE_HOMECAGE'],ax = ax,palette = colors)
     ax.set_ylim(-0.2,0.2)
-    plot.forceAspect(ax)
+    # plot.forceAspect(ax)
 
 def average_extended(extended, stru, types):
     averaged_extended = {}
@@ -147,8 +147,4 @@ if __name__ == '__main__':
     # averaged_extended = average_extended(extended['merged_sessions'],'Hpc','Pyr')
     averaged_extended = plot_fr_across_extended(extended['merged_sessions'],'BLA','Pyr')
 
-    fig,ax = plt.subplots(1,2)
-    for i,(state,extended_fr) in enumerate(averaged_extended.items()):
-        if i == 2: break
-        plt.imshow(data = pd.concat(extended_fr,1).T,clim = (-0.2,0.2),aspect = 'auto')
-        ax[i].set_title(state)
+    plt.savefig('plots/figures/extended.svg')

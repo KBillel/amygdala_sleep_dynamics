@@ -1,9 +1,9 @@
 from pathlib import Path
 from getpass import getuser
 users_paths = {'billel':
-               {'base_folder':Path("/mnt/electrophy/Gabrielle/GG-Dataset-Light/"),
+               {'base_folder': Path("/mnt/electrophy/Gabrielle/GG-Dataset-Light/"),
                 # {'base_folder':Path("/media/billel/My Passeport/Gabrielle/GG-Dataset"),
-                'example_session':Path('Rat08/Rat08-20130713')},
+                'example_session': Path('Rat08/Rat08-20130713')},
                'remi': {'base_folder': Path('.'),
                         'example_session': Path('.')}}
 username = getuser()
@@ -36,3 +36,24 @@ colors = {'NREM': '#808080ff',
                   'VL': '#ff33ffff'}
 
           }
+
+min_durations = {
+    'NREM': 200,
+    'REM': 50,
+    'WAKE_HOMECAGE': 200}
+
+states_nbins = {
+    'NREM': 30,
+    'REM': 12,
+    'WAKE_HOMECAGE': 30,
+    'DROWSY': 1}
+
+network_metrics_params = {
+    'eib': {
+        'binSize': 10},
+    'cv': {
+        'binSize': 10},
+    'sync': {
+        'binSize': 0.1,
+        'winSize': 10,
+        'step': 1}}

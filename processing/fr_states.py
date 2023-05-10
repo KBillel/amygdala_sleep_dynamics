@@ -1,4 +1,4 @@
-from settings import upath
+from settings import upath,min_durations
 
 import json
 from hashlib import sha256
@@ -387,7 +387,7 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
 
     id_columns = list(metadata.columns)
 
-    states = load.sleep_scoring(session, discard=discarded_states)
+    states = load.sleep_scoring(session, discard=discarded_states,drop_short_intervals=min_durations)
     states['SLEEP'] = states['NREM'].union(states['REM'])
 
     fr_extended = fr_across_extended(neurons, metadata, params, states, binSize)

@@ -38,3 +38,8 @@
 ### Statistics ?
 
 ### Plots
+
+
+### Doc : 
+
+sphinx-apidoc -o docs/source/ . 
