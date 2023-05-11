@@ -14,6 +14,10 @@ colors = {'NREM': '#808080ff',
           'REM': '#ffa500ff',
           'WAKE_HOMECAGE': '#008bc8ff',
 
+          'REM_ON':'#ffa500ff',
+          'REM_OFF':'#808080ff',
+          'Unknown':'#CCCCFF',
+
           'BLA': {'BLA': '#85ad8bff',
                   'VH': '#527a58ff',
                   'H': '#67986eff',
@@ -33,9 +37,9 @@ colors = {'NREM': '#808080ff',
                   'H': '#990099ff',
                   'M': '#cc00ccff',
                   'L': '#ff00ffff',
-                  'VL': '#ff33ffff'}
-
-          }
+                  'VL': '#ff33ffff',
+          },
+        0:'#808080ff'}
 
 min_durations = {
     'NREM': 200,

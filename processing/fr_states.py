@@ -279,6 +279,16 @@ def delta_extended(fr_extended, metadata, length_to_compute):
     df = pd.concat([metadata, df], axis=1)
     return df
 
+# @df_saver(args_to_save=['length_to_compute'],force = FORCE)
+def effect_extended(neurons: ArrayLike, metadata: pd.DataFrame,states: Dict[str, nts.IntervalSet],params,length_to_compute):
+    length_to_compute *= 1e6
+    extended_sleep = compute.extended(states, 'sleep', params['sleep_th'], params['wake_th'])
+    for i,c_extended in extended_sleep.iterrows():
+        before = nts.IntervalSet(c_extended.start-length_to_compute,c_extended.start).intersect(states['WAKE_HOMECAGE'])
+        after = nts.IntervalSet(c_extended.end,c_extended+length_to_compute).intersect(states['WAKE_HOMECAGE'])
+        print(before,after)
+
+
 def collapse_substates(extended:Dict[str,list])->Dict[str,list]:
     """
     _summary_
@@ -397,6 +407,7 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     df_states_fr = states_fr(neurons, metadata, states)
     df_rem_on = rem_on(neurons, metadata, states)
     df_deltas = delta_extended(fr_extended, metadata, 30)
+    df_effect_extended_sleep = effect_extended(neurons,metadata,states,params['sleep'],30)
 
     all_df = [df_states_fr, df_rem_on, df_deltas]
     df = reduce(lambda left, right: pd.merge(
@@ -454,6 +465,23 @@ if __name__ == "__main__":
               'wake': {'sleep_th': 60,
                        'wake_th': 60*30,
                        'sub_states': ['WAKE_HOMECAGE']}}
-    save = True
-    process_all_sessions(params = params, save = True)
+
+    session = load.session()
+    discarded_states = set(['DROWSY','WAKE'])
+
+    neurons, metadata = load.spikes(session)
+    metadata['SessID'] = metadata.index
+
+    id_columns = list(metadata.columns)
+
+    states = load.sleep_scoring(session, discard=discarded_states,drop_short_intervals=min_durations)
+    states['SLEEP'] = states['NREM'].union(states['REM'])
+
+    df_effect_extended_sleep = effect_extended(neurons,metadata,states,params['sleep'],5*60)
+
+
+
+
+    # save = True
+    # process_all_sessions(params = params, save = True)
     # process_session(params=params, save = True)

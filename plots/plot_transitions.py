@@ -111,9 +111,16 @@ if __name__ == '__main__':
                                'REM-NREM',
                                'WAKE_HOMECAGE-NREM',
                                'REM-WAKE_HOMECAGE']
+    baselines = [[0,30],
+                 [0,12],
+                 [0,30],
+                 [20,30],
+                 [8,12],
+                 [20,30],
+                 [8,12]]
 
     fig,ax = plt.subplots(3,len(transitions_of_interest),figsize = (16,8),sharey='row',sharex='col')
-    for i,transition_name in enumerate(transitions_of_interest):
+    for i,(transition_name,baseline )in enumerate(zip(transitions_of_interest,baselines)):
 
         states = transition_name.split('-')
         bin_state = {s:params['nbins'][s] for s in states}
@@ -125,7 +132,7 @@ if __name__ == '__main__':
         plot_activity_at_transitions(c_activity,c_metadata,stru,norm = None,quantile='WAKE_HOMECAGE',ax=ax[0,i],bin_state = bin_state)
         ax[0,i].semilogy()
         plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'zscore',quantile='WAKE_HOMECAGE',ax=ax[1,i],bin_state = bin_state)
-        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = [0,10],quantile= 'WAKE_HOMECAGE',ax=ax[2,i],bin_state = bin_state)
+        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = baseline,quantile= 'WAKE_HOMECAGE',ax=ax[2,i],bin_state = bin_state)
 
         ax[0,i].set_title(transition_name)
     
@@ -136,6 +143,7 @@ if __name__ == '__main__':
     ax[0,0].set_ylabel('FR')
     ax[1,0].set_ylabel('FR(zscore)')
     ax[1,0].set_ylim(-1.5,1.5)
+    ax[2,0].set_ylim(75,250)
 
     plt.tight_layout()
-    plt.savefig('plots/figures/tansitions.png')
+    plt.savefig('plots/figures/tansitions.svg')

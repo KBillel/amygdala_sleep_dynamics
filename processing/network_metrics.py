@@ -376,16 +376,8 @@ if __name__ == '__main__':
     save = True
     force = False
 
-    # process_session(save = save,force = force,params=network_metrics_params,min_durations=min_durations)
     df = process_all_sessions(save = save,
-                            force = force,
-                            params = network_metrics_params,
-                            min_durations = min_durations,
-                            nbins = states_nbins)
-        
-    # process_all_sessions(save = True,force = True,params = params)
-    # plt.ion()
-    # fig,ax = plt.subplots(3,1)
-
-    # for i,m in enumerate((eib,cv,sync)):
-    #     ax[i].plot(m)
+                             force = force,
+                             params = network_metrics_params,
+                             min_durations = min_durations,
+                             nbins = states_nbins)

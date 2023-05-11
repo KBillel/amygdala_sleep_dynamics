@@ -1,4 +1,4 @@
-from settings import upath
+from settings import upath, states_nbins, min_durations
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -326,7 +326,6 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],
     all_sessions = {}
     for p in tqdm(session_list.Path):
         try:
-            print(p)
             c_session, c_metadata, c_transitions, c_activity = process_session(local_path=p, 
                                                                                save=save, 
                                                                                force=force,
@@ -344,27 +343,11 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],
     return all_sessions
 
 if __name__ == '__main__':
-    # import cProfile
-    # import pstats
-    # from pstats import SortKey
-
-    min_durations = {
-        'NREM': 200,
-        'REM': 50,
-        'WAKE_HOMECAGE': 200,
-        'DROWSY': 25
-    }
-
-    nbins = {
-        'NREM': 30,
-        'REM': 12,
-        'WAKE_HOMECAGE': 30,
-        'DROWSY': 1}
 
     save = True
     force = True
     
-    all_session = process_all_sessions(min_durations = min_durations,nbins = nbins, save = save,force = force)
+    all_session = process_all_sessions(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
     # process_session(min_durations = min_durations,nbins = nbins, save = save,force = force)
     # cProfile.run('process_session(save= False,force = True,min_durations = min_durations,nbins=nbins)','run_transition')
     # p = pstats.Stats('run_transition')
