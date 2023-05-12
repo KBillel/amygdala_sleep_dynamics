@@ -75,6 +75,7 @@ def session(base_folder:Optional[Union[str,Path]] = upath['base_folder'],
         rat = byrat
         day = byday
         local_path = Path(session_index[(session_index.Rat == rat) & (session_index.Day == day)].Path.values[0])
+        session_path = base_folder/local_path
     else:
         rat = session_index["Rat"][session_index["Path"] == local_path.as_posix()].values[0]
         day = session_index["Day"][session_index["Path"] == local_path.as_posix()].values[0]

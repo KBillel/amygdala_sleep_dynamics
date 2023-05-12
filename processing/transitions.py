@@ -1,4 +1,4 @@
-from settings import upath, states_nbins, min_durations
+from settings import upath, states_nbins, min_durations,extended_params,colors
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -46,7 +46,6 @@ def check_continuity(block: nts.IntervalSet, cont_th: float = 1.5) -> bool:
     is_hole = np.any(delta_t > cont_th_us)
     return not is_hole
 
-
 def make_contigous(transition:pd.DataFrame)->pd.DataFrame:
     """
     Force interval DataFrame to become contigous so the end of each epoch match the start of the next
@@ -79,10 +78,62 @@ def make_contigous(transition:pd.DataFrame)->pd.DataFrame:
 
     return pd.DataFrame(df)
 
+def find_smallest(state_df:pd.DataFrame,ix:int,jx:int)->int:
+    """
+    Return the index of the smallest interval in state_df
+
+    Parameters
+    ----------
+    state_df : pd.DataFrame
+        start, stop, state
+    ix : int
+        first index
+    jx : int
+        second index
+
+    Returns
+    -------
+    int
+        the ix if state_df[ix] is the smallest, else jx
+    """
+    dur_i = state_df.loc[ix,'end'] - state_df.loc[ix,'start']
+    dur_j = state_df.loc[jx,'end'] - state_df.loc[jx,'start']
+    elem = [ix,jx]
+    smallest = np.argmin([dur_i,dur_j])
+    return elem[smallest]
+
+def remove_included_intervals(state_df:pd.DataFrame)->pd.DataFrame:
+    """
+    Fix state_df if we have some overlapping intervals.
+    Will remove all state that are fully included in another
+    Will crop the smallest interval if an interval overlap with another
+
+    Parameters
+    ----------
+    state_df : pd.DataFrame
+        start, stop, state
+    Returns
+    -------
+    pd.DataFrame
+        Fixed state_df
+    """
+    to_drop = []
+    for ix,i_row in state_df.iterrows(): # For all intervals 
+        for jx,j_row in state_df.iloc[ix+1:].iterrows(): # Compare with all following intervals (J always starts after I as start are sorted)
+            if j_row.end < i_row.end: # If J ends before I then J is totaly included in I
+                to_drop.append(jx)    
+            elif j_row.start < i_row.end: # If J starts during I then J overlap at then end of I
+                idx = find_smallest(state_df,ix,jx) # Find the smallest because it make more sens to change that one
+                if idx == ix:
+                    state_df.loc[ix,'end'] = state_df.loc[jx,'start']
+                else:
+                    state_df.loc[jx,'start'] = state_df.loc[ix,'end']
+    state_df.drop(to_drop,axis = 0,inplace = True)
+    return state_df
 
 def find_transitions(states: Dict[str, nts.IntervalSet],
                      n_states: int = 2, 
-                     min_durations: Dict[str, int] = None,
+                     min_durations: Dict[str, int] = {},
                      contigous:bool = True) -> dict:
     """
     Find all transitions in states
@@ -112,8 +163,9 @@ def find_transitions(states: Dict[str, nts.IntervalSet],
     state_df = pd.concat(l_state_df)
     state_df.sort_values(by='start', inplace=True)
     state_df.reset_index(drop=True, inplace=True)
+    state_df = remove_included_intervals(state_df)
     for irow, row in state_df.iterrows():
-        if row['end'] - row['start'] < min_durations[row['state']]*1_000_000:
+        if row['end'] - row['start'] < min_durations.get(row['state'],0)*1_000_000:
             state_df.loc[irow, 'state'] = 'HOLE'
 
     transitions = {}
@@ -144,15 +196,14 @@ def compute_transitions_activity(neurons: ArrayLike,
     ----------
     neurons : ArrayLike
         list of neurons given by :py:func:`load.spikes`
-    transitions : Dict[List[nts.IntervalSet]]
-
+    transitions : Dict[str,List[nts.IntervalSet]]
     nbins : Dict[str,int]
         number of bin used for each state
 
     Returns
     -------
     ArrayLike
-        _description_
+        activity[neurons x times x transitions]
     """
     activity = {}
     for tr_name, tr_l_intervals in transitions.items():
@@ -240,16 +291,27 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
 
     states = load.sleep_scoring(session)
     neurons, metadata = load.spikes(session)
-
     transitions = find_transitions(states, n_states=1, min_durations=min_durations)
     transitions.update(find_transitions(states, n_states=2, min_durations=min_durations))
     transitions.update(find_transitions(states, n_states=3, min_durations=min_durations))
+    
+
+    states_wake_extended = extended_transitions(states)
+    transitions.update(find_transitions(states_wake_extended, n_states=3, min_durations=min_durations))
+    
     activity = compute_transitions_activity(neurons, transitions, nbins)
 
     if save:
         save_data(session,metadata, transitions, activity,nbins, min_durations)
 
     return session, metadata, transitions, activity
+
+def extended_transitions(states):
+    extended = compute.extended(states,'sleep',extended_params['sleep']['sleep_th'],extended_params['sleep']['wake_th'])
+    states_wake_extended = {'WAKE_HOMECAGE':states['WAKE_HOMECAGE'].union(states['DROWSY']).merge_close_intervals(150,'s'),
+              'extended_sleep':extended}
+              
+    return states_wake_extended
 
 
 def append_transitions(concatenated_transitions:Dict[str,Dict], c_transitions:Dict)->Dict[str,Dict]:
@@ -342,13 +404,60 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],
 
     return all_sessions
 
+def crop_interval(interval,keep,from_end = True):
+    interval = interval.copy()
+    
+    keep *= 1e6
+    if from_end:
+        n_start = int(interval.end - keep)
+        interval.loc['start'] = max(n_start,interval['start'])
+    else:
+        n_end = int(interval.start + keep)
+        interval.loc['end'] = min(n_end,interval['end'])
+    return interval
+    
+
+def effect_extended(neurons,metadata,states,params):
+    sleep_th = params['sleep']['sleep_th']
+    wake_th = params['sleep']['wake_th']
+    extended = compute.extended(states,'sleep',sleep_th,wake_th)
+    
+    for s in states:
+        states[s].drop('state',axis = 1,inplace = True)
+    
+    states = {'WAKE_HOMECAGE':states['WAKE_HOMECAGE'].union(states['DROWSY']).merge_close_intervals(150,'s'),
+              'extended_sleep':extended}
+    # fig,ax = plt.subplots(2,1,sharex = 'col')
+    # plot.intervals(states['WAKE_HOMECAGE'],col = colors['WAKE_HOMECAGE'],ax = ax[0])
+    # plot.intervals(extended,ax = ax[1])
+    # plt.show()
+    transitions = find_transitions(states,3,contigous=True)
+
+    wake_arround_sleep = []
+    for c_trans in transitions['WAKE_HOMECAGE-extended_sleep-WAKE_HOMECAGE']:
+        before = crop_interval(c_trans.iloc[0],60,from_end=True)
+        after = crop_interval(c_trans.iloc[2],60,from_end=False)
+        c_interval = nts.IntervalSet([before.start,after.start],[before.end,after.end])
+        c_interval['state'] = ['before','after']
+        wake_arround_sleep.append(c_interval)
+    wake_arround_sleep = {'before-after':wake_arround_sleep}    
+    fr = compute_transitions_activity(neurons,wake_arround_sleep,nbins={'before':1,
+                                                                        'after':1})
+
+    return fr
 if __name__ == '__main__':
 
     save = True
     force = True
     
+    # session = load.session()
+    # states = load.sleep_scoring(session)
+    # neurons, metadata = load.spikes(session)
+
+    # transitions = effect_extended(neurons,metadata,states,extended_params)
+
     all_session = process_all_sessions(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
-    # process_session(min_durations = min_durations,nbins = nbins, save = save,force = force)
+    # process_session(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
     # cProfile.run('process_session(save= False,force = True,min_durations = min_durations,nbins=nbins)','run_transition')
     # p = pstats.Stats('run_transition')
     # p.sort_stats(SortKey.CUMULATIVE).print_stats(10)

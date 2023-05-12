@@ -13,6 +13,7 @@ upath = users_paths[username]
 colors = {'NREM': '#808080ff',
           'REM': '#ffa500ff',
           'WAKE_HOMECAGE': '#008bc8ff',
+          'extended_sleep': '#ffeeaaff',
 
           'REM_ON':'#ffa500ff',
           'REM_OFF':'#808080ff',
@@ -50,7 +51,8 @@ states_nbins = {
     'NREM': 30,
     'REM': 12,
     'WAKE_HOMECAGE': 30,
-    'DROWSY': 1}
+    'DROWSY': 1,
+    'extended_sleep':90}
 
 network_metrics_params = {
     'eib': {
@@ -61,3 +63,10 @@ network_metrics_params = {
         'binSize': 0.1,
         'winSize': 10,
         'step': 1}}
+
+extended_params = {'sleep': {'sleep_th': 60*30,
+                        'wake_th': 60,
+                        'sub_states': ['NREM', 'REM']},
+              'wake': {'sleep_th': 60,
+                       'wake_th': 60*30,
+                       'sub_states': ['WAKE_HOMECAGE']}}

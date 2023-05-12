@@ -87,7 +87,7 @@ def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None
     ax.plot(np.nanmean(activity_int,0),'k--')
 
     c = 0
-    for state,nbins in bin_state.items():
+    for state,nbins in bin_state:
         ax.axvspan(c,c+nbins, facecolor=colors[state], alpha=0.5)
         c+=nbins
     return metadata
@@ -104,32 +104,36 @@ if __name__ == '__main__':
     with open('processed_data/transitions.json','r') as jf:
         params = json.load(jf)
 
-    transitions_of_interest = ['NREM',
-                               'REM',
-                               'WAKE_HOMECAGE',
-                               'NREM-REM',
-                               'REM-NREM',
-                               'WAKE_HOMECAGE-NREM',
-                               'REM-WAKE_HOMECAGE']
-    baselines = [[0,30],
-                 [0,12],
+    transitions_of_interest = [
+                               'NREM',
+                            #    'REM',
+                            #    'WAKE_HOMECAGE',
+                            #    'NREM-REM',
+                            #    'REM-NREM',
+                            #    'WAKE_HOMECAGE-NREM',
+                            #    'REM-WAKE_HOMECAGE',
+                               'WAKE_HOMECAGE-extended_sleep-WAKE_HOMECAGE']
+    baselines = [
                  [0,30],
-                 [20,30],
-                 [8,12],
-                 [20,30],
-                 [8,12]]
+                #  [0,12],
+                #  [0,30],
+                #  [20,30],
+                #  [8,12],
+                #  [20,30],
+                #  [8,12],
+                 [20,30]]
 
     fig,ax = plt.subplots(3,len(transitions_of_interest),figsize = (16,8),sharey='row',sharex='col')
     for i,(transition_name,baseline )in enumerate(zip(transitions_of_interest,baselines)):
 
         states = transition_name.split('-')
-        bin_state = {s:params['nbins'][s] for s in states}
+        bin_state = [(s,params['nbins'][s]) for s in states]
         
         c_transitions = transitions[transition_name]
         c_activity = c_transitions['activity']
         c_metadata = pd.merge(c_transitions['metadata'],df_firing_rates,on = ['Rat','Day','Shank','Id','Region','Type'],how='left')
 
-        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = None,quantile='WAKE_HOMECAGE',ax=ax[0,i],bin_state = bin_state)
+        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = None,quantile=None,ax=ax[0,i],bin_state = bin_state)
         ax[0,i].semilogy()
         plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'zscore',quantile='WAKE_HOMECAGE',ax=ax[1,i],bin_state = bin_state)
         plot_activity_at_transitions(c_activity,c_metadata,stru,norm = baseline,quantile= 'WAKE_HOMECAGE',ax=ax[2,i],bin_state = bin_state)
@@ -146,4 +150,4 @@ if __name__ == '__main__':
     ax[2,0].set_ylim(75,250)
 
     plt.tight_layout()
-    plt.savefig('plots/figures/tansitions.svg')
+    plt.savefig('plots/figures/transitons.svg')
