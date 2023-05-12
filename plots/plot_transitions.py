@@ -73,18 +73,23 @@ def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None
     
     activity_pyr,metadata_pyr = filter_neurons(activity,metadata,stru,'Pyr',finite = True)
     activity_int,metadata_int = filter_neurons(activity,metadata,stru,'Int',finite = True)
+   
 
     if quantile is not None:
         metadata_pyr = quantile_cut(metadata_pyr,quantile,quantile_labels)
         for q in quantile_labels:
             mask_q = metadata_pyr['Quantile'] == q
-            y_ = np.nanmean(activity_pyr[mask_q],0)
-            ax.plot(y_,c = colors_stru[q])
+            # y_ = np.nanmean(activity_pyr[mask_q],0)
+            # ax.plot(y_,c = colors_stru[q])
+            plot.confidence_intervals(range(activity_pyr[mask_q].shape[1]),activity_pyr[mask_q],style = colors_stru[q],ax = ax)
     else:
-        y_ = np.nanmean(activity_pyr,0)
-        ax.plot(y_,c = colors_stru[stru])
+        # y_ = np.nanmean(activity_pyr,0)
+        # ax.plot(y_,c = colors_stru[stru])
+        plot.confidence_intervals(range(activity_pyr.shape[1]),activity_pyr,style = colors_stru[stru],ax = ax)
+
         
-    ax.plot(np.nanmean(activity_int,0),'k--')
+    # ax.plot(np.nanmean(activity_int,0),'k--')
+    # plot.confidence_intervals(range(activity_int.shape[1]),activity_int,style = 'k',ax = ax)
 
     c = 0
     for state,nbins in bin_state:
@@ -105,7 +110,7 @@ if __name__ == '__main__':
         params = json.load(jf)
 
     transitions_of_interest = [
-                               'NREM',
+                            #    'NREM',
                             #    'REM',
                             #    'WAKE_HOMECAGE',
                             #    'NREM-REM',
@@ -114,7 +119,7 @@ if __name__ == '__main__':
                             #    'REM-WAKE_HOMECAGE',
                                'WAKE_HOMECAGE-extended_sleep-WAKE_HOMECAGE']
     baselines = [
-                 [0,30],
+                #  [0,30],
                 #  [0,12],
                 #  [0,30],
                 #  [20,30],
@@ -133,21 +138,22 @@ if __name__ == '__main__':
         c_activity = c_transitions['activity']
         c_metadata = pd.merge(c_transitions['metadata'],df_firing_rates,on = ['Rat','Day','Shank','Id','Region','Type'],how='left')
 
-        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = None,quantile=None,ax=ax[0,i],bin_state = bin_state)
-        ax[0,i].semilogy()
-        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'zscore',quantile='WAKE_HOMECAGE',ax=ax[1,i],bin_state = bin_state)
-        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = baseline,quantile= 'WAKE_HOMECAGE',ax=ax[2,i],bin_state = bin_state)
+        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = None,quantile=None,ax=ax[0],bin_state = bin_state)
+        ax[0].semilogy()
+        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'zscore',quantile=None,ax=ax[1],bin_state = bin_state)
+        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = baseline,quantile= None,ax=ax[2],bin_state = bin_state)
 
-        ax[0,i].set_title(transition_name)
+        ax[0].set_title(transition_name)
     
-    for i in ax:
-        for j in i: 
-            plot.clean_axes(j)
-
-    ax[0,0].set_ylabel('FR')
-    ax[1,0].set_ylabel('FR(zscore)')
-    ax[1,0].set_ylim(-1.5,1.5)
-    ax[2,0].set_ylim(75,250)
+    for i in ax.flatten():
+        plot.clean_axes(i)
+    
+    
+    ax[0].set_ylabel('FR')
+    ax[1].set_ylabel('FR(zscore)')
+    ax[2].set_ylabel('FR % Baseline')
+    ax[1].set_ylim(-1.5,1.5)
+    ax[2].set_ylim(75,250)
 
     plt.tight_layout()
     plt.savefig('plots/figures/transitons.svg')

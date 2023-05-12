@@ -397,7 +397,6 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     df_states_fr = states_fr(neurons, metadata, states)
     df_rem_on = rem_on(neurons, metadata, states)
     df_deltas = delta_extended(fr_extended, metadata, 30)
-    df_effect_extended_sleep = effect_extended(neurons,metadata,states,params['sleep'],30)
 
     all_df = [df_states_fr, df_rem_on, df_deltas]
     df = reduce(lambda left, right: pd.merge(
