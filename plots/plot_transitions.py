@@ -149,6 +149,7 @@ if __name__ == '__main__':
         plot.clean_axes(i)
     
     
+    
     ax[0].set_ylabel('FR')
     ax[1].set_ylabel('FR(zscore)')
     ax[2].set_ylabel('FR % Baseline')

@@ -46,6 +46,7 @@ def check_continuity(block: nts.IntervalSet, cont_th: float = 1.5) -> bool:
     is_hole = np.any(delta_t > cont_th_us)
     return not is_hole
 
+
 def make_contigous(transition:pd.DataFrame)->pd.DataFrame:
     """
     Force interval DataFrame to become contigous so the end of each epoch match the start of the next
@@ -291,15 +292,17 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
 
     states = load.sleep_scoring(session)
     neurons, metadata = load.spikes(session)
+
     transitions = find_transitions(states, n_states=1, min_durations=min_durations)
     transitions.update(find_transitions(states, n_states=2, min_durations=min_durations))
     transitions.update(find_transitions(states, n_states=3, min_durations=min_durations))
     
-
     states_wake_extended = extended_transitions(states)
     transitions.update(find_transitions(states_wake_extended, n_states=3, min_durations=min_durations))
     
     activity = compute_transitions_activity(neurons, transitions, nbins)
+    effect_of_extended = effect_extended(neurons,metadata,states,extended_params)
+    return(effect_of_extended)
 
     if save:
         save_data(session,metadata, transitions, activity,nbins, min_durations)
@@ -441,10 +444,9 @@ def effect_extended(neurons,metadata,states,params):
         c_interval['state'] = ['before','after']
         wake_arround_sleep.append(c_interval)
     wake_arround_sleep = {'before-after':wake_arround_sleep}    
-    fr = compute_transitions_activity(neurons,wake_arround_sleep,nbins={'before':1,
-                                                                        'after':1})
-
-    return fr
+    fr = compute_transitions_activity(neurons,wake_arround_sleep,nbins={'before':10,
+                                                                        'after':10})
+    return np.nanmean(fr['before-after'],2)
 if __name__ == '__main__':
 
     save = True
@@ -456,8 +458,9 @@ if __name__ == '__main__':
 
     # transitions = effect_extended(neurons,metadata,states,extended_params)
 
-    all_session = process_all_sessions(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
-    # process_session(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
+    # all_session = process_all_sessions(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
+    
+    fr = process_session(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
     # cProfile.run('process_session(save= False,force = True,min_durations = min_durations,nbins=nbins)','run_transition')
     # p = pstats.Stats('run_transition')
     # p.sort_stats(SortKey.CUMULATIVE).print_stats(10)
