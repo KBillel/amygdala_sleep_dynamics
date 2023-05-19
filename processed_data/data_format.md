@@ -70,6 +70,43 @@ Here is provided a diagram showing how each shelve is organized :
 - unique_sessions: *Dict* with all individual sessions
   - Rat-08-20130708: *Dict* with output of the process_session generating this file
     - session: *Dict* from bk.load.session
-    - eib: *np.array*
-    - cv: *np.array*
-    - sync: *np.array*
+    - metrics: *Dict*
+      - raw
+        - eib: *Tuple[ArrayLike,ArrayLike]* -> t,values
+        - cv: *Tuple[ArrayLike,ArrayLike]* -> t,values
+        - sync: *Tuple[ArrayLike,ArrayLike]* -> t,values
+      - averaged: *Dict* with different kind of averaged
+        - epochs: *pd.DataFrame* start,end,state,metrics
+        - thirds *pd.DataFrame* start,end,state,metrics
+        - nbins *pd.DataFrame* start,end,state,metrics
+    - params: *Dict*
+- merged_sessions
+  - epochs: *Dict[str,Dict]*
+    - metric: *Dict[str,ArraylLike]*-> 1 values per epochs
+  - thirds: *Dict[str,ArrayLike]*
+    - metric: *Dict[str,ArraylLike]*-> n_epochs x 3
+  - nbins: *Dict[str,ArrayLike]*
+    - metric: *Dict[str,ArraylLike]*-> n_epochs x nbins
+
+### oscillations
+
+- unique_sessions: *Dict* with all individual sessions
+  - Rat-08-20130708: *Dict* with output of the process_session generating this file
+    - session: *Dict* from bk.load.sessdion
+    - power: *Dict*
+      - raw: *Dict*
+        - left: *Dict*
+          - delta: *Tuple[ArrayLike,ArrayLike]* -> t,values
+          - theta: *Tuple[ArrayLike,ArrayLike]* -> t,values
+          - gammas: *Tuple[ArrayLike,ArrayLike]* -> t,values
+      - averaged: *Dict*
+        - left: *pd.DataFrame* start,end,state,bands
+    - params: *Dict*
+- merged_session: *Dict*
+  - left: *Dict*
+    - delta: *Dict[str,ArrayLike]* -> n_epochs x nbins
+    - theta: *Dict[str,ArrayLike]* -> n_epochs x nbins
+  - right
+    - delta: *Dict[str,ArrayLike]* -> n_epochs x nbins
+    - theta: *Dict[str,ArrayLike]* -> n_epochs x nbins
+
