@@ -79,6 +79,7 @@ def make_contigous(transition:pd.DataFrame)->pd.DataFrame:
 
     return pd.DataFrame(df)
 
+
 def find_smallest(state_df:pd.DataFrame,ix:int,jx:int)->int:
     """
     Return the index of the smallest interval in state_df
@@ -102,6 +103,7 @@ def find_smallest(state_df:pd.DataFrame,ix:int,jx:int)->int:
     elem = [ix,jx]
     smallest = np.argmin([dur_i,dur_j])
     return elem[smallest]
+
 
 def remove_included_intervals(state_df:pd.DataFrame)->pd.DataFrame:
     """
@@ -131,6 +133,7 @@ def remove_included_intervals(state_df:pd.DataFrame)->pd.DataFrame:
                     state_df.loc[jx,'start'] = state_df.loc[ix,'end']
     state_df.drop(to_drop,axis = 0,inplace = True)
     return state_df
+
 
 def find_transitions(states: Dict[str, nts.IntervalSet],
                      n_states: int = 2, 
@@ -309,6 +312,7 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
 
     return session, metadata, transitions, activity
 
+
 def extended_transitions(states):
     extended = compute.extended(states,'sleep',extended_params['sleep']['sleep_th'],extended_params['sleep']['wake_th'])
     states_wake_extended = {'WAKE_HOMECAGE':states['WAKE_HOMECAGE'].union(states['DROWSY']).merge_close_intervals(150,'s'),
@@ -419,7 +423,6 @@ def crop_interval(interval,keep,from_end = True):
         interval.loc['end'] = min(n_end,interval['end'])
     return interval
     
-
 def effect_extended(neurons,metadata,states,params):
     sleep_th = params['sleep']['sleep_th']
     wake_th = params['sleep']['wake_th']
@@ -447,6 +450,8 @@ def effect_extended(neurons,metadata,states,params):
     fr = compute_transitions_activity(neurons,wake_arround_sleep,nbins={'before':10,
                                                                         'after':10})
     return np.nanmean(fr['before-after'],2)
+
+
 if __name__ == '__main__':
 
     save = True
@@ -461,6 +466,3 @@ if __name__ == '__main__':
     # all_session = process_all_sessions(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
     
     fr = process_session(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
-    # cProfile.run('process_session(save= False,force = True,min_durations = min_durations,nbins=nbins)','run_transition')
-    # p = pstats.Stats('run_transition')
-    # p.sort_stats(SortKey.CUMULATIVE).print_stats(10)

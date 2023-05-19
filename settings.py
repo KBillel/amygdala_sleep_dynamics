@@ -64,6 +64,14 @@ network_metrics_params = {
         'winSize': 10,
         'step': 1}}
 
+
+oscillations_bands = {
+    'delta':[0.1,4],
+    'theta':[4,12],
+    'low_gamma':[20,40],
+    'mid_gamma':[40,80],
+    'high_gamma':[80,100]
+}
 extended_params = {'sleep': {'sleep_th': 60*30,
                         'wake_th': 60,
                         'sub_states': ['NREM', 'REM']},

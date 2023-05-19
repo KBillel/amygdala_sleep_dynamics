@@ -68,14 +68,14 @@ def cumsum_curves(x,nbins,col = 'orange',ax = None, log = False):
     return ax
 
 
-def confidence_intervals(x,y,style = None,ax = None):
+def confidence_intervals(x,y,style = None,alpha = 0.5,ax = None):
     # Todo: To remove
     if ax is None:
         fig,ax = plt.subplots(1, 1)
     
     conf = 1.96*scipy.stats.sem(y,0,nan_policy='omit')
     m = np.nanmean(y,0)
-    ax.fill_between(x,m+conf,m-conf,color = style,alpha = 0.2)
+    ax.fill_between(x,m+conf,m-conf,color = style,alpha = alpha)
     ax.plot(x,m,c = style)
     return ax
 

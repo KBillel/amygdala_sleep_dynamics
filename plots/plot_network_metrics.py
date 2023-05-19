@@ -14,13 +14,20 @@ def load_data(path):
 
 
 def plot_nbins(data,ax = None):
+
+    ylim = {'z_eib':(-1,1),
+            'cv':(1,2.5),
+            'sync':(0,0.015)}
+
     if ax is None:
         fig,ax = plt.subplots(len(data),3,figsize = (4,8),sharey='row')
     for i,(metric_name,all_states) in enumerate(data.items()):
         for j,(state,values) in enumerate(all_states.items()):
             x = range(len(values.T))
-            plot.confidence_intervals(x,values,ax = ax[i,j],style=colors[state])
-
+            plot.confidence_intervals(x,values,ax = ax[i,j],style=colors[state],alpha=0.2)
+            ax[i,j].set_xlabel('Bins')
+            ax[i,j].set_ylim(ylim[metric_name])
+            ax[i,j].set_title(state)
 
 
 def plot_epochs(data,ax = None):
@@ -58,11 +65,10 @@ if __name__ == '__main__':
     for _,d in data['merged_sessions'].items():
         for m in metrics_to_pop: d.pop(m)
 
-
-    fig,ax = plt.subplots(3,5,sharex='col',figsize = (16,8))
+    gridspec_kw={'width_ratios':[3,6,2,2,2]}
+    fig,ax = plt.subplots(3,5,sharex='col',figsize = (12,8),gridspec_kw=gridspec_kw)
 
     for i in range(len(ax)):
-        print('y')
         ax[i,2].sharey(ax[i,3])
         ax[i,3].sharey(ax[i,4])
 
@@ -70,6 +76,10 @@ if __name__ == '__main__':
     plot_epochs(data['merged_sessions']['thirds'],ax = ax[:,1])
     plot_nbins(data['merged_sessions']['nbins'],ax[:,2:])
     for a in ax.flatten(): plot.clean_axes(a)
+    
     plt.tight_layout()
     plt.show()
-    plt.savefig('plots/figures/network_metrics.svg')
+    fig.savefig('output.png')
+    fig.savefig('plots/figures/network_metrics.svg')
+
+    plt.close(fig)

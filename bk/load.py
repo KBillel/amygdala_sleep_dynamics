@@ -89,6 +89,7 @@ def session(base_folder:Optional[Union[str,Path]] = upath['base_folder'],
 
 
     session_metadata = {
+                        'dataset_path':base_folder,
                         'rat':rat,
                         'day':day,
                         'session_path':session_path,
@@ -343,28 +344,28 @@ def channels():
     return shank_channels
 
 
-def best_channel(shank):
-    rat_shank_channels = os.path.join(base, "All-Rats/Rat_Shank_Channels.csv")
+def best_channel(session,shank):
+    rat_shank_channels = session['dataset_path']/"All-Rats/Rat_Shank_Channels.csv"
     rat_shank_channels = pd.read_csv(rat_shank_channels)
 
     chan = rat_shank_channels[
-        (rat_shank_channels["rat"] == rat) & (
+        (rat_shank_channels["rat"] == session['rat']) & (
             rat_shank_channels["shank"] == shank)
     ]
     if not np.isnan(shank):
-        return chan["channel"].values[0]
+        return int(chan["channel"].values[0])
     else:
         return np.nan
 
 
-def bla_shanks():
-    bla_shanks = os.path.join(base, "All-Rats/BLA_Shanks.csv")
+def bla_shanks(session):
+    bla_shanks = session['dataset_path']/"All-Rats/BLA_Shanks.csv"
     bla_shanks = pd.read_csv(bla_shanks)
 
-    left_chan = bla_shanks[(bla_shanks["Rat"] == rat) & (bla_shanks["Day"] == day)][
+    left_chan = bla_shanks[(bla_shanks["Rat"] == session['rat']) & (bla_shanks["Day"] == session['day'])][
         "Left"
     ].values[0]
-    right_chan = bla_shanks[(bla_shanks["Rat"] == rat) & (bla_shanks["Day"] == day)][
+    right_chan = bla_shanks[(bla_shanks["Rat"] == session['rat']) & (bla_shanks["Day"] == session['rat'])][
         "Right"
     ].values[0]
     
@@ -375,10 +376,10 @@ def bla_shanks():
     return {"left": left_chan, "right": right_chan}
 
 
-def bla_channels():
+def bla_channels(session):
     return {
-        "left": best_channel(bla_shanks()["left"]),
-        "right": best_channel(bla_shanks()["right"]),
+        "left": best_channel(session,bla_shanks(session)["left"]),
+        "right": best_channel(session,bla_shanks(session)["right"]),
     }
 
 def shank_neighbours(shank):
@@ -758,30 +759,29 @@ def recording_length(fs=1250):
     return rec_len
 
 
-def lfp(
-    channel,
-    start=0,
-    stop=1e8,
-    fs=1250.0,
-    n_channels_local=None,
-    precision=np.int16,
-    dat=False,
-    verbose=False,
-    memmap=False,
-    p=None,
-    volt_step=0.195,
-):
+def lfp(session,
+        channel,
+        start=0,
+        stop=1e8,
+        fs=1250.0,
+        n_channels_local=None,
+        precision=np.int16,
+        dat=False,
+        verbose=False,
+        memmap=False,
+        p=None,
+        volt_step=0.195):
 
     if (np.isnan(channel)) or (channel is None):
-        return None
+        return np.array([np.nan]),np.array([np.nan])
 
     if p is None:
-        p = session + ".lfp"
+        p = session['session_path']/(session['session_name']+".lfp")
         if dat:
-            p = session + ".dat"
+            p = session['session_path']/(session['session_name']/".dat")
 
     if n_channels_local is None:
-        n_channels = xml()["nChannels"]
+        n_channels = session["n_channels"]
     else:
         n_channels = n_channels_local
 
@@ -798,12 +798,13 @@ def lfp(
     # In order not to read after the file
     if stop_index > os.path.getsize(p):
         stop_index = os.path.getsize(p)
-    fp = np.memmap(
-        p, precision, "r", start_index, shape=(stop_index - start_index) // bytes_size
-    )
+    fp = np.memmap(p, precision, "r", start_index, shape=(stop_index - start_index) // bytes_size)
     if memmap == True:
         print("/!\ memmap is not compatible with volt_step /!\ ")
-        return fp.reshape(-1, n_channels)[:, channel]
+        data = fp.reshape(-1, n_channels)[:, channel]
+        t = np.arange(0, len(data)) / fs + start
+        t *= 1_000_000
+        return t.astype(int),data
     data = np.array(fp, dtype=np.float16).reshape(
         len(fp) // n_channels, n_channels)*volt_step
 

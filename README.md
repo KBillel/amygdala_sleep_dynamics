@@ -16,23 +16,23 @@
   - [x] delta_fr extended
   - [ ] ratio FR_REM - FR_NREM / FR_NREM + FR_REM
   - [x] firing_rates_within_state
-  - [ ] firing_rates_at_transitions
+  - [x] firing_rates_at_transitions
   - [x] firing_rates_during_extended
-- [ ] Network_metrics
-  - [ ] Sync
-    - [ ] By State
-    - [ ] By Thirds
-    - [ ] Within State
+- [x] Network_metrics
+  - [x] Sync
+    - [x] By State
+    - [x] By Thirds
+    - [x] Within State
     - [ ] At Transitions
-  - [ ] EIB
-    - [ ] By State
-    - [ ] By Thirds
-    - [ ] Within State
+  - [x] EIB
+    - [x] By State
+    - [x] By Thirds
+    - [x] Within State
     - [ ] At Transitions
-  - [ ] CV
-    - [ ] By State
-    - [ ] By Thirds
-    - [ ] Within State
+  - [x] CV
+    - [x] By State
+    - [x] By Thirds
+    - [x] Within State
     - [ ] At Transitions
 
 ### Statistics ?

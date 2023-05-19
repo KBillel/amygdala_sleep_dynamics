@@ -197,7 +197,7 @@ def make_bins_average(metrics:Dict[str,Tuple[ArrayLike,ArrayLike]],states:Dict[s
         t_us = t * 1_000_000 # converting to µs
         l_metric = []
         for irow,row in states.iterrows():
-            bins = np.linspace(row.start,row.end,nbins[row.state]+1)
+            bins = np.linspace(row.start,row.end,nbins.get(row.state,1)+1)
             idx = np.searchsorted(t_us,bins)
             l_values = np.array([np.nanmean(value[i:j]) for i,j in zip(idx[:-1],idx[1:])])
             l_metric.append(l_values.squeeze())
