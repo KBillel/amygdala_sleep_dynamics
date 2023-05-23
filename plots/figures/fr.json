@@ -1,0 +1,211 @@
+{
+    "l_stats":[
+        {
+            "panel_name":"FR_States",
+            "test":"Wilcoxon test (paired samples)",
+            "n":[
+                261,
+                261
+            ],
+            "pvalue":0.0005454155667761455,
+            "stat_value":12318.0,
+            "name":"('Int', 'REM') vs ('Int', 'WAKE_HOMECAGE')",
+            "n_total":522
+        },
+        {
+            "panel_name":"FR_States",
+            "test":"Wilcoxon test (paired samples)",
+            "n":[
+                1776,
+                1776
+            ],
+            "pvalue":2.9360542932488175e-38,
+            "stat_value":506481.0,
+            "name":"('Pyr', 'NREM') vs ('Pyr', 'REM')",
+            "n_total":3552
+        },
+        {
+            "panel_name":"FR_States",
+            "test":"Wilcoxon test (paired samples)",
+            "n":[
+                1776,
+                1776
+            ],
+            "pvalue":2.5826388173064604e-131,
+            "stat_value":260361.0,
+            "name":"('Pyr', 'REM') vs ('Pyr', 'WAKE_HOMECAGE')",
+            "n_total":3552
+        },
+        {
+            "panel_name":"FR_States",
+            "test":"Wilcoxon test (paired samples)",
+            "n":[
+                261,
+                261
+            ],
+            "pvalue":8.370489758686589e-17,
+            "stat_value":6676.0,
+            "name":"('Int', 'NREM') vs ('Int', 'REM')",
+            "n_total":522
+        },
+        {
+            "panel_name":"FR_States",
+            "test":"Wilcoxon test (paired samples)",
+            "n":[
+                261,
+                261
+            ],
+            "pvalue":6.635475264624437e-05,
+            "stat_value":11730.0,
+            "name":"('Int', 'NREM') vs ('Int', 'WAKE_HOMECAGE')",
+            "n_total":522
+        },
+        {
+            "panel_name":"FR_States",
+            "test":"Wilcoxon test (paired samples)",
+            "n":[
+                1776,
+                1776
+            ],
+            "pvalue":2.0652929558900986e-119,
+            "stat_value":285122.0,
+            "name":"('Pyr', 'NREM') vs ('Pyr', 'WAKE_HOMECAGE')",
+            "n_total":3552
+        },
+        {
+            "panel_name":"FR_States",
+            "test":"<class 'scipy.stats.stats.KruskalResult'>",
+            "n":[
+                356,
+                355,
+                355,
+                355,
+                355
+            ],
+            "pvalue":4.116571672790151e-34,
+            "stat_value":162.56607488626378,
+            "name":"",
+            "n_total":1776
+        },
+        {
+            "panel_name":"Corr_IncreaseREM_FRWake",
+            "test":"Mann-Whitney-Wilcoxon test two-sided",
+            "n":[
+                355,
+                355
+            ],
+            "pvalue":0.08929352469126871,
+            "stat_value":70158.0,
+            "name":"L vs M",
+            "n_total":710
+        },
+        {
+            "panel_name":"Corr_IncreaseREM_FRWake",
+            "test":"Mann-Whitney-Wilcoxon test two-sided",
+            "n":[
+                355,
+                355
+            ],
+            "pvalue":0.0004986833362826518,
+            "stat_value":74097.0,
+            "name":"M vs H",
+            "n_total":710
+        },
+        {
+            "panel_name":"Corr_IncreaseREM_FRWake",
+            "test":"Mann-Whitney-Wilcoxon test two-sided",
+            "n":[
+                356,
+                355
+            ],
+            "pvalue":0.08350985608921223,
+            "stat_value":70413.0,
+            "name":"VL vs L",
+            "n_total":711
+        },
+        {
+            "panel_name":"Corr_IncreaseREM_FRWake",
+            "test":"Mann-Whitney-Wilcoxon test two-sided",
+            "n":[
+                355,
+                355
+            ],
+            "pvalue":0.02718451877099079,
+            "stat_value":71205.0,
+            "name":"H vs VH",
+            "n_total":710
+        },
+        {
+            "panel_name":"Corr_IncreaseREM_FRWake",
+            "test":"Mann-Whitney-Wilcoxon test two-sided",
+            "n":[
+                356,
+                355
+            ],
+            "pvalue":5.735607283539721e-06,
+            "stat_value":76882.0,
+            "name":"VL vs M",
+            "n_total":711
+        },
+        {
+            "panel_name":"Corr_IncreaseREM_FRWake",
+            "test":"Mann-Whitney-Wilcoxon test two-sided",
+            "n":[
+                355,
+                355
+            ],
+            "pvalue":2.0908399003084335e-10,
+            "stat_value":81320.0,
+            "name":"M vs VH",
+            "n_total":710
+        },
+        {
+            "panel_name":"Corr_IncreaseREM_FRWake",
+            "test":"Mann-Whitney-Wilcoxon test two-sided",
+            "n":[
+                355,
+                355
+            ],
+            "pvalue":7.571700390938586e-10,
+            "stat_value":80799.0,
+            "name":"L vs H",
+            "n_total":710
+        },
+        {
+            "panel_name":"Corr_IncreaseREM_FRWake",
+            "test":"Mann-Whitney-Wilcoxon test two-sided",
+            "n":[
+                355,
+                355
+            ],
+            "pvalue":9.02327260042818e-18,
+            "stat_value":87187.0,
+            "name":"L vs VH",
+            "n_total":710
+        },
+        {
+            "panel_name":"Corr_IncreaseREM_FRWake",
+            "test":"Mann-Whitney-Wilcoxon test two-sided",
+            "n":[
+                356,
+                355
+            ],
+            "pvalue":2.9824961859240293e-16,
+            "stat_value":86322.0,
+            "name":"VL vs H",
+            "n_total":711
+        },
+        {
+            "panel_name":"Corr_IncreaseREM_FRWake",
+            "test":"Mann-Whitney-Wilcoxon test two-sided",
+            "n":[
+                356,
+                355
+            ],
+            "pvalue":6.770193555413582e-24,
+            "stat_value":91406.0,
+            "name":"VL vs VH",
+            "n_total":711
+        }
+    ]
+}

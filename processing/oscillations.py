@@ -55,8 +55,7 @@ def get_power_by_band(session, best_bla_channels, oscillations_bands):
 
 def averaged_by_bins(power, states, nbins):
     for side, values in power['raw'].items():
-        power['averaged'][side] = make_epochs_average(
-            power['raw'][side], states, nbins=nbins)
+        power['averaged'][side] = make_epochs_average(power['raw'][side], states, nbins=nbins)
     return power
 
 

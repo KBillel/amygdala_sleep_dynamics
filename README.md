@@ -39,7 +39,6 @@
 
 ### Plots
 
+### Doc: 
 
-### Doc : 
-
-sphinx-apidoc -o docs/source/ . 
+sphinx-apidoc -o docs/source/ .

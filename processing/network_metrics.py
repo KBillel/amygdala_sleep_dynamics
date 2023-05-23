@@ -23,6 +23,9 @@ from pathlib import Path
 from typing import Union, Optional, Tuple, Dict, Sequence
 from numpy.typing import ArrayLike
 
+
+from transitions import find_transitions
+
 def check_session(metadata,stru,min_pyr,min_int):
     npyr =  np.sum((metadata.Region == stru) & (metadata.Type == 'Pyr'))
     nint = np.sum((metadata.Region == stru) & (metadata.Type == 'Int'))
@@ -32,7 +35,13 @@ def check_session(metadata,stru,min_pyr,min_int):
     else:
         return True
 
-def compute_eib(neurons:ArrayLike,metadata:pd.DataFrame,stru:str,binSize:float)->ArrayLike:
+def compute_eib(neurons:ArrayLike,
+                metadata:pd.DataFrame,
+                stru:str,
+                binSize:float,
+                start:Optional[float] = 0,
+                stop:Optional[float] = None,
+                nbins:Optional[int] = None)->ArrayLike:
     """
     Compute excitatory inhibitory balance across time for all neurons in stru.
 
@@ -53,9 +62,9 @@ def compute_eib(neurons:ArrayLike,metadata:pd.DataFrame,stru:str,binSize:float)-
         1d vector with EIB for the whole session
     """
     if not check_session(metadata,stru,10,3):
-        return np.nan,np.nan
+        return np.array([np.nan]),np.array([np.nan])
 
-    t,bin_matrix = compute.binSpikes(neurons,binSize)
+    t,bin_matrix = compute.binSpikes(neurons,binSize,start=start,stop=stop,nbins=nbins)
     f_bin_matrix_pyr,_ = misc.filter_neurons(bin_matrix,metadata,stru,'Pyr',True)
     f_bin_matrix_int,_ = misc.filter_neurons(bin_matrix,metadata,stru,'Int',True)
     
@@ -65,7 +74,12 @@ def compute_eib(neurons:ArrayLike,metadata:pd.DataFrame,stru:str,binSize:float)-
     eib = m_pyr / (m_pyr+m_int)
     return t,eib
 
-def compute_cv(neurons:ArrayLike,metadata:pd.DataFrame,stru:str,binSize:float)->ArrayLike:
+def compute_cv(neurons:ArrayLike,
+                metadata:pd.DataFrame,
+                stru:str,binSize:float,
+                start:Optional[float] = 0,
+                stop:Optional[float] = None,
+                nbins:Optional[int] = None)->ArrayLike:
     """
     Compute coefficient of variations across principal neurons across time for all neurons in stru.
 
@@ -86,55 +100,11 @@ def compute_cv(neurons:ArrayLike,metadata:pd.DataFrame,stru:str,binSize:float)->
         1d vector with CV for the whole session
     """
     if not check_session(metadata,stru,10,0):
-        return np.nan,np.nan
-    t,bin_matrix = compute.binSpikes(neurons,binSize)
+        return np.array([np.nan]),np.array([np.nan])
+    t,bin_matrix = compute.binSpikes(neurons,binSize,start=start,stop=stop,nbins=nbins)
     f_bin_matrix_pyr,_ = misc.filter_neurons(bin_matrix,metadata,stru,'Pyr',True)
     cv = np.std(f_bin_matrix_pyr,0) / np.nanmean(f_bin_matrix_pyr,0)
     return t,cv
-
-def compute_sync_moving_windows(neurons:ArrayLike,metadata:pd.DataFrame,stru:str,binSize:float,winSize:float,step:float)->ArrayLike:
-    """
-    Compute synchrony of principal neurons in stru across time. 
-
-    Parameters
-    ----------
-    neurons : ArrayLike
-        list of neurons given by :py:func:`load.spikes`
-    metadata : pd.DataFrame
-        metadata as :py:func:`load.spikes`
-    stru : str
-        structure (BLA/Hpc/Pir) to select neurons from
-    binSize : float
-        binSize used for binning the spikes
-    winSize : float
-        Size of the window to compute sync
-    step : float
-        step of the sliding window. If step = winSize there is no overlap
-
-    Returns
-    -------
-    ArrayLike
-        1d vector with sync for the whole session
-    """
-    if not check_session(metadata,stru,10,0):
-        return np.nan,np.nan
-    
-    winSize = int(winSize/binSize) #Convert second to idx
-    step = int(step / binSize)
-
-    t,bin_matrix = compute.binSpikes(neurons,binSize)
-    f_bin_matrix_pyr,_ = misc.filter_neurons(bin_matrix,metadata,stru,'Pyr',True)
-
-    window_strides = np.lib.stride_tricks.sliding_window_view(f_bin_matrix_pyr,winSize,axis = 1)
-    window_strides = window_strides[:,::step,:].transpose((1,0,2))
-
-    t_window_strides = np.lib.stride_tricks.sliding_window_view(t,winSize)
-    t_window_strides = t_window_strides[::step,:]
-
-    sync = np.array([compute_sync(win) for win in window_strides])
-    t_sync = np.nanmean(t_window_strides,1)
-
-    return t_sync,sync
 
 def compute_sync(bin_matrix:ArrayLike)->float:
     """
@@ -154,6 +124,67 @@ def compute_sync(bin_matrix:ArrayLike)->float:
     np.fill_diagonal(corr,np.nan)
     sync = np.nanmean(corr)
     return sync
+
+def compute_sync_moving_windows(neurons:ArrayLike,
+                                metadata:pd.DataFrame,
+                                stru:str,
+                                binSize:float,
+                                winSize:float,
+                                step:float,
+                                start:Optional[float] = 0,
+                                stop:Optional[float] = None,
+                                nbins:Optional[int] = None)->ArrayLike:
+    """
+    Compute synchrony of principal neurons in stru across time. 
+
+    Parameters
+    ----------
+    neurons : ArrayLike
+        list of neurons given by :py:func:`load.spikes`
+    metadata : pd.DataFrame
+        metadata as :py:func:`load.spikes`
+    stru : str
+        structure (BLA/Hpc/Pir) to select neurons from
+    binSize : float
+        binSize used for binning the spikes
+    winSize : float
+        Size of the window to compute sync in seconds
+    step : float
+        step of the sliding window. If step = winSize there is no overlap
+
+    Returns
+    -------
+    ArrayLike
+        1d vector with sync for the whole session
+    """
+    if not check_session(metadata,stru,10,0):
+        return np.array([np.nan]),np.array([np.nan])
+    
+    t,bin_matrix = compute.binSpikes(neurons,binSize,start=start,stop=stop)
+
+    # winSize = int(winSize/binSize) #Convert second to idx
+    # step = int(step / binSize)
+    binSize = np.median(np.diff(t))
+    
+    winSize = int(winSize/binSize)
+    step = int(step / binSize)
+    if nbins is not None:
+        winSize = int(len(t)/nbins)
+        step = winSize
+
+    f_bin_matrix_pyr,_ = misc.filter_neurons(bin_matrix,metadata,stru,'Pyr',True)
+
+    window_strides = np.lib.stride_tricks.sliding_window_view(f_bin_matrix_pyr,winSize,axis = 1)
+    window_strides = window_strides[:,::step,:].transpose((1,0,2))
+
+    t_window_strides = np.lib.stride_tricks.sliding_window_view(t,winSize)
+    t_window_strides = t_window_strides[::step,:]
+
+    sync = np.array([compute_sync(win) for win in window_strides])
+    t_sync = np.nanmean(t_window_strides,1)
+
+    return t_sync,sync
+
 
 def make_epochs_average(metrics:Dict[str,Tuple[ArrayLike,ArrayLike]],states:Dict[str,nts.IntervalSet],nbins:Dict[str,int]):
     """
@@ -204,6 +235,38 @@ def make_bins_average(metrics:Dict[str,Tuple[ArrayLike,ArrayLike]],states:Dict[s
 
         states[metric] = l_metric
 
+
+def compute_metrics_at_transitions(neurons,
+                                   metadata,
+                                   stru,
+                                   transitions,
+                                   nbins,
+                                   func,**kwargs):
+    metric = {}
+    for tr_name, tr_l_intervals in transitions.items():
+        metric_array_tr = []
+        for interval in tr_l_intervals:
+            l_metric = []
+            for irow, row in interval.iterrows():
+                start_s = (row.start / 1_000_000)
+                end_s = (row.end / 1_000_000)
+                t,c_metric = func(neurons = neurons,
+                                metadata = metadata,
+                                stru = stru,
+                                start = start_s,
+                                stop = end_s,
+                                nbins=nbins[row['state']],
+                                **kwargs)
+                l_metric.append(c_metric)
+
+            metric_array_intervals = np.hstack(l_metric)
+            metric_array_tr.append(metric_array_intervals)
+        metric[tr_name] = np.vstack(metric_array_tr)
+    return metric
+    
+        
+    
+
 def process_session(base_folder: Union[Path, str] = upath['base_folder'],
                     local_path: Union[Path, str] = upath['example_session'],
                     stru:str = 'BLA',
@@ -247,7 +310,8 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     neurons, metadata = load.spikes(session)
 
     metrics = {'raw':{},
-               'averaged':{}}
+               'averaged':{},
+               'at_transitions':{}}
     
     metrics['raw']['eib'] = compute_eib(neurons,metadata,stru,binSize = params['eib']['binSize'])
     metrics['raw']['z_eib'] = metrics['raw']['eib'][0],zscore(metrics['raw']['eib'][1])
@@ -264,13 +328,42 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     metrics['averaged']['nbins'] = make_epochs_average(metrics['raw'],states,nbins)
 
 
+    transitions = find_transitions(states,1,min_durations = min_durations)
+    transitions.update(find_transitions(states, n_states=2, min_durations=min_durations))
+    transitions.update(find_transitions(states, n_states=3, min_durations=min_durations))
+    metrics['at_transitions']['eib'] = compute_metrics_at_transitions(neurons,
+                                                                      metadata,
+                                                                      stru,
+                                                                      transitions,
+                                                                      nbins,
+                                                                      func = compute_eib,
+                                                                      binSize = None)
+    
+    metrics['at_transitions']['cv'] = compute_metrics_at_transitions(neurons,
+                                                                    metadata,
+                                                                    stru,
+                                                                    transitions,
+                                                                    nbins,
+                                                                    func = compute_cv,
+                                                                    binSize = None)
+
+    metrics['at_transitions']['sync'] = compute_metrics_at_transitions(neurons,
+                                                                    metadata,
+                                                                    stru,
+                                                                    transitions,
+                                                                    nbins,
+                                                                    func = compute_sync_moving_windows,
+                                                                    binSize = params['sync']['binSize'],
+                                                                    winSize = params['sync']['winSize'],
+                                                                    step = params['sync']['winSize'])
+
+
     if save:
         save_data(session,metrics,params)
 
     return session,metrics
 
-def append_session(concatenated_session,session):
-    #FIXME Return all nan ? 
+def append_averaged_session(concatenated_session,session):
     metric_names = session['raw'].keys()
     
     for average_kind,df in session['averaged'].items():
@@ -291,6 +384,18 @@ def clean_metrics(metrics):
             metrics[metric_name][state_name] = stack
 
     return metrics
+
+def append_transitions(concatenated_transitions,c_session):
+    for metric_name, all_transitions in c_session['at_transitions'].items():
+        prev_metric = concatenated_transitions.get(metric_name,{})
+        for transitions_name, c_activity in all_transitions.items():
+            prev_trans = prev_metric.get(transitions_name,[])
+            if not np.all(np.isnan(c_activity)):
+                prev_trans.append(c_activity)
+            prev_metric[transitions_name] = prev_trans
+        concatenated_transitions[metric_name] = prev_metric
+    return concatenated_transitions
+
 def merge_all_sessions(all_sessions:Dict[str,Dict])->Dict[str,Dict]:
     """
     During process_all_session, average all session into a single dict with dataframe or nparray
@@ -307,11 +412,26 @@ def merge_all_sessions(all_sessions:Dict[str,Dict])->Dict[str,Dict]:
         ???
     """
     concatenated_sessions = {}
+    concatenated_transitions = {}
     for _, c_session in all_sessions.items():
-        concatenated_sessions = append_session(concatenated_sessions,c_session)
+        concatenated_sessions = append_averaged_session(concatenated_sessions,c_session)
+        concatenated_transitions = append_transitions(concatenated_transitions, c_session)
+
     
     for average_kind,all_metrics in concatenated_sessions.items():
         all_metrics = clean_metrics(all_metrics)
+    
+    for metric_name,all_transitions in concatenated_transitions.items():
+        to_drop = []
+        for transition_name,c_transitions in all_transitions.items():
+            if len(c_transitions) == 0:
+                to_drop.append(transition_name)
+                continue
+            concatenated_transitions[metric_name][transition_name] = np.vstack(c_transitions)
+        for d in to_drop:
+            concatenated_transitions[metric_name].pop(d)
+            
+    concatenated_sessions['at_transitions'] = concatenated_transitions
 
     return concatenated_sessions
 
@@ -333,6 +453,7 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],
 
     session_list = load.session_list()
     all_sessions = {}
+    errors = []
     for p in tqdm(session_list.Path):
         try:
             print(p)
@@ -342,11 +463,12 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],
                                                    **kwargs)
             all_sessions[c_session['session_name']] = c_metrics
         except:
+            errors.append(p)
             print(f'{p} not taken care of because bug')
 
     merged = merge_all_sessions(all_sessions)
     io.save_shelve('processed_data/network_metrics',{'merged_sessions':merged})
-    return merged
+    return merged,errors
 
 def save_data(session: Dict, 
               metrics:Dict,
@@ -374,10 +496,17 @@ def save_data(session: Dict,
 if __name__ == '__main__':
 
     save = True
-    force = False
+    force = True
 
-    df = process_all_sessions(save = save,
-                             force = force,
-                             params = network_metrics_params,
-                             min_durations = min_durations,
-                             nbins = states_nbins)
+    df,errors = process_all_sessions(save = save,
+                              force = force,
+                              params = network_metrics_params,
+                              min_durations = min_durations,
+                              nbins = states_nbins)
+    # sess,m = process_session(local_path = 'Rat08/Rat08-20130716',
+    #                          save = save,
+    #                          force = force,
+    #                          params = network_metrics_params,
+    #                          min_durations = min_durations,
+    #                          nbins = states_nbins)
+

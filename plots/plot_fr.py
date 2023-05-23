@@ -5,12 +5,19 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from bk import plot
+from bk.stats import Stats, List_Stats,from_statannon,from_scipy
 from typing import Union, Optional,Tuple, Dict, Sequence
 
 from statannotations.Annotator import Annotator
 from settings import colors
 import itertools
-from scipy.stats import linregress
+from scipy.stats import linregress,kruskal
+
+from dataclasses import dataclass
+from serde import serde
+import json
+
+
 
 def set_rem_labels(df):
     rem_on = df.pInc <= 0.001
@@ -46,9 +53,6 @@ def boxenplot_firing_rates(df,stru,ax = None):
     df_melt['FR'].replace([np.inf,-np.inf],np.nan,inplace=True)
     df_melt.dropna(inplace=True)
 
-    
-        
-    
     ### Violin plots
     ax.set_title('Violin Plots')
     plotting_params = {'data':df_melt,
@@ -61,14 +65,16 @@ def boxenplot_firing_rates(df,stru,ax = None):
 
     sns.boxenplot(**plotting_params)
     annotator = Annotator(pairs = pairs,**plotting_params)
-    stats = annotator.configure(test="Wilcoxon",comparisons_correction = 'Bonferroni').apply_and_annotate()
+    _,stats_data = annotator.configure(test="Wilcoxon",comparisons_correction = 'Bonferroni').apply_and_annotate()
+    formatted_stats = from_statannon(stats_data,'FR_States')
     ax.set_xlabel('States')
     ax.set_ylabel('FiringRates')
     y_ticks = np.arange(-3,4)
     ax.set_yticks(y_ticks,pow(10.0,y_ticks))
     ax.legend(loc = 'lower right')
 
-    return ax,(pairs,stats)
+    return ax,formatted_stats
+
 
 def cumsum_curves_firing_rates(df,stru,states_name,ax = None):
     df_stru = df[(df.Region == stru)]
@@ -107,6 +113,7 @@ def proportion_rem_on(df,stru,ax = None):
     print(data)
     bar = data.plot.bar(stacked = True,ax = ax,color = colors)
 
+
 def corr_rem_nrem_fr(df,stru,ax = None):
     quantile_labels = ['VL','L','M','H','VH']
 
@@ -141,22 +148,29 @@ def corr_rem_nrem_fr(df,stru,ax = None):
     ax[0].set_ylabel(r'Ratio $\frac{REM-NREM}{REM+NREM}$')
     # plot.forceAspect(ax[0]) 
     
-
-
     #Make quintiles
-    plotting_params = {'data':df_stru_pyr,
-              'x':'Quantiles',
-              'y':'ratio',
-              'palette':'Greens',
-              'ax':ax[1]}
+
     
     df_stru_pyr['Quantiles'] = pd.qcut(df_stru_pyr['WAKE_HOMECAGE'],5,quantile_labels)
+    
+    plotting_params = {'data':df_stru_pyr,
+            'x':'Quantiles',
+            'y':'ratio',
+            'palette':'Greens',
+            'ax':ax[1]}
+    kruskal_stats = kruskal(*[df_stru_pyr[df_stru_pyr['Quantiles'] == q].ratio for q in quantile_labels])
+    kruskal_stats = from_scipy(kruskal_stats,'FR_States',df_stru_pyr.groupby('Quantiles').count().Rat.to_list())
     pairs = list(itertools.combinations(df_stru_pyr.Quantiles.unique(),2))
     
     sns.boxplot(**plotting_params)
     annotator = Annotator(pairs=pairs,**plotting_params)
-    _,stats = annotator.configure(test="Mann-Whitney",comparisons_correction = 'Bonferroni').apply_and_annotate()
+    _,stats_data = annotator.configure(test="Mann-Whitney",comparisons_correction = 'Bonferroni').apply_and_annotate()
+    mann_whitney = from_statannon(stats_data,'Corr_IncreaseREM_FRWake')
+
+    kruskal_stats.extend(mann_whitney)
+    print(kruskal_stats)
     ax[1].set_ylim(-1,3.5)
+    return ax,kruskal_stats
 
 
 if __name__ == '__main__':
@@ -168,18 +182,25 @@ if __name__ == '__main__':
     
     states_name = ['NREM','REM','WAKE_HOMECAGE']
 
-
     # Plots
     fig,ax = plt.subplot_mosaic("""AAAAADDD
-                                   BBCCEEFF""",figsize = (12,8),layout="tight")
+                                   BBCCEEFF""",
+                                   figsize = (12,8),
+                                   layout="tight")
     
     
-    _,(pairs,stats) = boxenplot_firing_rates(df,'BLA',ax = ax['A'])
+    ax_corr,stats_boxplot = boxenplot_firing_rates(df,'BLA',ax = ax['A'])
     cumsum_curves_firing_rates(df,'BLA',states_name = states_name,ax = (ax['B'],ax['C']))
     proportion_rem_on(rem_on_off,'BLA',ax['D'])
-    corr_rem_nrem_fr(df,'BLA',(ax['E'],ax['F']))
+    ax_box,stats_corr = corr_rem_nrem_fr(df,'BLA',(ax['E'],ax['F']))
     for _,a in ax.items(): plot.clean_axes(a)
     # plt.tight_layout()
     fig.savefig('output.png')
     fig.savefig('plots/figures/fr.svg')
-    plt.close(fig)
+    # plt.close(fig)
+
+    stats_boxplot.extend(stats_corr)
+    stats_boxplot.save('plots/figures/fr.json')
+
+
+     ## Stats :

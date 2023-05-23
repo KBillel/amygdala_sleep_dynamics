@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import seaborn as sns
-
+from statannotations.Annotator import Annotator
+from itertools import combinations
+from scipy.stats import kruskal
 
 def load_data(path):
     return io.load_shelve(path)
@@ -37,10 +39,45 @@ def plot_epochs(data,ax = None):
     for i,(metric_name,all_states) in enumerate(data.items()):
         df = metric_epoch_to_df(metric_name, all_states)
         if len(np.unique(df.times)) == 1:
-            sns.boxenplot(data = df,x = 'state',y = metric_name,ax = ax[i],palette=colors)
+            plotting_params = {'data':df,
+                               'x':'state',
+                               'y':metric_name,
+                               'ax':ax[i],
+                               'palette':colors}
+            states = ['REM','NREM','WAKE_HOMECAGE']
+            pairs = list(combinations(states,2))
+            sns.boxenplot(**plotting_params)
+            annotator = Annotator(pairs = pairs,**plotting_params)
+            _,stats_data = annotator.configure(test="Mann-Whitney",comparisons_correction = 'Bonferroni').apply_and_annotate()
+
+
         else:
-            sns.boxenplot(data = df,x = 'state',y = metric_name,ax = ax[i],hue = 'times')
-        ax[i].legend()
+            df.times[df.times==0] = 'First'
+            df.times[df.times==1] = 'Middle'
+            df.times[df.times==2] = 'Last'
+            pairs = [
+                    [('NREM', 'First'), ('NREM', 'Middle')],
+                    [('NREM', 'First'), ('NREM', 'Last')],
+                    [('NREM', 'Middle'), ('NREM', 'Last')],
+
+                    [('REM', 'First'), ('REM', 'Middle')],
+                    [('REM', 'First'), ('REM', 'Last')],
+                    [('REM', 'Middle'), ('REM', 'Last')],
+
+                    [('WAKE_HOMECAGE', 'First'), ('WAKE_HOMECAGE', 'Middle')],
+                    [('WAKE_HOMECAGE', 'First'), ('WAKE_HOMECAGE', 'Last')],
+                    [('WAKE_HOMECAGE', 'Middle'), ('WAKE_HOMECAGE', 'Last')]
+                    ]
+            
+            plotting_params = {'data':df,
+                                'x':'state',
+                                'y':metric_name,
+                                'ax':ax[i],
+                                'hue':'times'}
+            
+            sns.boxenplot(**plotting_params)
+            annotator = Annotator(pairs = pairs,**plotting_params)
+            _,stats_data = annotator.configure(test="Wilcoxon",comparisons_correction = 'Bonferroni').apply_and_annotate()
 
 
 def metric_epoch_to_df(metric_name, all_states):
@@ -65,21 +102,23 @@ if __name__ == '__main__':
     for _,d in data['merged_sessions'].items():
         for m in metrics_to_pop: d.pop(m)
 
-    gridspec_kw={'width_ratios':[3,6,2,2,2]}
-    fig,ax = plt.subplots(3,5,sharex='col',figsize = (12,8),gridspec_kw=gridspec_kw)
+    # gridspec_kw={'width_ratios':[3,6,2,2,2]}
+    fig,ax = plt.subplots(2,3,sharex='col',figsize = (12,8),squeeze=False)
 
-    for i in range(len(ax)):
-        ax[i,2].sharey(ax[i,3])
-        ax[i,3].sharey(ax[i,4])
+    # for i in range(len(ax)):
+    #     ax[i,2].sharey(ax[i,3])
+    #     ax[i,3].sharey(ax[i,4])
 
-    plot_epochs(data['merged_sessions']['epochs'],ax[:,0])
-    plot_epochs(data['merged_sessions']['thirds'],ax = ax[:,1])
-    plot_nbins(data['merged_sessions']['nbins'],ax[:,2:])
+    plot_epochs(data['merged_sessions']['epochs'],ax[0,:])
+    plot_epochs(data['merged_sessions']['thirds'],ax = ax[1,:])
+    # plot_nbins(data['merged_sessions']['nbins'],ax[:,2:])
     for a in ax.flatten(): plot.clean_axes(a)
-    
-    plt.tight_layout()
+    ax[0,0].set_ylim(-3,5)
+    ax[0,1].set_ylim(0,6)
+    ax[0,2].set_ylim(-0.02,0.08)
+    fig.tight_layout()
     plt.show()
     fig.savefig('output.png')
     fig.savefig('plots/figures/network_metrics.svg')
 
-    plt.close(fig)
+    # plt.close(fig)

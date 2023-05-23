@@ -7,10 +7,15 @@ import pandas as pd
 
 # Remi imports :
 from pathlib import Path
-from typing import Union, Optional, Tuple, Dict, Sequence
+from typing import Union, Optional, Tuple, Dict, Sequence,List
 from numpy.typing import ArrayLike
 from settings import upath
 
+
+from serde import serde
+from serde.json import to_json
+
+from dataclasses import dataclass
 
 def poisson(baseRate:float, counts:int, time:float) -> Tuple[float, float, float]:
     """
@@ -117,3 +122,57 @@ def formatting_pvalues(pvalues):
     pvalues[no_star] = 'N.S'
 
     return pvalues
+
+
+
+def from_scipy(stats_data,panel_name,n):
+    stat = Stats(panel_name=panel_name,
+                test=str(stats_data.__class__),
+                n = n,
+                pvalue=stats_data.pvalue,
+                stat_value=stats_data.statistic,
+                name = '')
+    return List_Stats([stat])
+
+
+def from_statannon(stats_data,panel_name):
+    l_stats = []
+    for stat in stats_data:
+        l_stats.append(Stats(panel_name=panel_name,
+                             test = stat.data.test_description,
+                             n = [len(group['group_data']) for group in stat.structs],
+                             pvalue = stat.data.pvalue,
+                             stat_value = stat.data.stat_value,
+                             name = f'{stat.data.group1} vs {stat.data.group2}'))
+
+    l_stats = List_Stats(l_stats)
+    return l_stats
+
+
+@serde
+@dataclass
+class Stats:
+    panel_name: str
+    test: str
+    n: List[int]
+    pvalue : float
+    stat_value: float
+    name: str
+    n_total: Optional[int] = None
+    def __post_init__(self):
+        self.n_total = sum(self.n)
+
+@serde
+@dataclass
+class List_Stats:
+    l_stats: List[Stats]
+    def __getitem__(self,idx):
+        return self.l_stats[idx]
+    def append(self,item:Stats):
+        self.l_stats.append(item)
+    def extend(self,items):
+        self.l_stats.extend(items)
+    def save(self,path:str):
+        with open(path,'w') as jf:
+            jf.write(to_json(self,indent = 4))
+    
