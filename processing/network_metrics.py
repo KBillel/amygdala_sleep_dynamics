@@ -35,6 +35,47 @@ def check_session(metadata,stru,min_pyr,min_int):
     else:
         return True
 
+
+def compute_fr(neurons:ArrayLike,
+                metadata:pd.DataFrame,
+                stru:str,
+                binSize:float,
+                start:Optional[float] = 0,
+                stop:Optional[float] = None,
+                nbins:Optional[int] = None)->ArrayLike:
+    """
+    Compute firing rates for Pyr and Interneurons
+
+    Parameters
+    ----------
+    neurons : ArrayLike
+        list of neurons given by :py:func:`load.spikes`
+    metadata : pd.DataFrame
+        metadata as :py:func:`load.spikes`
+    stru : str
+        structure (BLA/Hpc/Pir) to select neurons from
+    binSize : float
+        binSize used for binning the spikes
+
+    Returns
+    -------
+    ArrayLike
+        two 1d vector
+    """
+    if not check_session(metadata,stru,10,3):
+        return np.array([np.nan]),np.array([np.nan])
+
+    t,bin_matrix = compute.binSpikes(neurons,binSize,start=start,stop=stop,nbins=nbins)
+    f_bin_matrix_pyr,_ = misc.filter_neurons(bin_matrix,metadata,stru,'Pyr',True)
+    f_bin_matrix_int,_ = misc.filter_neurons(bin_matrix,metadata,stru,'Int',True)
+    
+    m_pyr = np.nanmean(f_bin_matrix_pyr,0)
+    m_int = np.nanmean(f_bin_matrix_int,0)
+
+    return t,m_pyr,m_int
+
+
+
 def compute_eib(neurons:ArrayLike,
                 metadata:pd.DataFrame,
                 stru:str,
@@ -310,9 +351,12 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     neurons, metadata = load.spikes(session)
 
     metrics = {'raw':{},
+               'examples':{},
                'averaged':{},
                'at_transitions':{}}
     
+    metrics['examples']['FR'] = compute_fr(neurons,metadata,stru,binSize = params['eib']['binSize'])
+    metrics['examples']['States'] = states
     metrics['raw']['eib'] = compute_eib(neurons,metadata,stru,binSize = params['eib']['binSize'])
     metrics['raw']['z_eib'] = metrics['raw']['eib'][0],zscore(metrics['raw']['eib'][1])
     metrics['raw']['cv'] = compute_cv(neurons,metadata,stru,binSize = params['cv']['binSize'])
@@ -503,7 +547,7 @@ if __name__ == '__main__':
                               params = network_metrics_params,
                               min_durations = min_durations,
                               nbins = states_nbins)
-    # sess,m = process_session(local_path = 'Rat08/Rat08-20130716',
+    # sess,m = process_session(local_path = 'Rat08/Rat08-20130713',
     #                          save = save,
     #                          force = force,
     #                          params = network_metrics_params,

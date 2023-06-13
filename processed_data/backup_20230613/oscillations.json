@@ -1,0 +1,36 @@
+{
+    "nbins": {
+        "NREM": 30,
+        "REM": 12,
+        "WAKE_HOMECAGE": 30,
+        "DROWSY": 1,
+        "extended_sleep": 90
+    },
+    "min_durations": {
+        "NREM": 200,
+        "REM": 50,
+        "WAKE_HOMECAGE": 200
+    },
+    "oscillations_bands": {
+        "delta": [
+            0.1,
+            4
+        ],
+        "theta": [
+            4,
+            12
+        ],
+        "low_gamma": [
+            20,
+            40
+        ],
+        "mid_gamma": [
+            40,
+            80
+        ],
+        "high_gamma": [
+            80,
+            100
+        ]
+    }
+}

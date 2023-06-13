@@ -1,0 +1,13 @@
+{
+    "eib": {
+        "binSize": 10
+    },
+    "cv": {
+        "binSize": 10
+    },
+    "sync": {
+        "binSize": 0.1,
+        "winSize": 10,
+        "step": 1
+    }
+}

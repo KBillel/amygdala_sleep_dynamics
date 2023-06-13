@@ -40,7 +40,10 @@ colors = {'NREM': '#808080ff',
                   'L': '#ff00ffff',
                   'VL': '#ff33ffff',
           },
-        0:'#808080ff'}
+        0:'#808080ff',
+        'sync':'#355070',
+        'EIB':'#6D597A',
+        'CV':'#B56576'}
 
 min_durations = {
     'NREM': 200,

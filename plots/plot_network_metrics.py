@@ -9,14 +9,41 @@ import numpy as np
 import seaborn as sns
 from statannotations.Annotator import Annotator
 from itertools import combinations
-from scipy.stats import kruskal
+from scipy.stats import kruskal,zscore
 
 def load_data(path):
     return io.load_shelve(path)
 
+def plot_examples(data,start,stop,ax):
+
+    states = data['metrics']['examples']['States']
+    for s in states:
+        states[s] = states[s].drop('state',axis = 1)
+    
+    t_fr = data['metrics']['examples']['FR'][0]
+    pyr_fr = zscore(data['metrics']['examples']['FR'][1])
+    int_fr = zscore(data['metrics']['examples']['FR'][2])
+
+    t_eib = data['metrics']['raw']['z_eib'][0]
+    eib = data['metrics']['raw']['z_eib'][1]
+
+    t_cv = data['metrics']['raw']['cv'][0]
+    cv = zscore(data['metrics']['raw']['cv'][1])
+
+    t_sync = data['metrics']['raw']['sync'][0]
+    sync = zscore(data['metrics']['raw']['sync'][1])
+
+
+    for state in ['NREM','REM','WAKE_HOMECAGE']:
+        plot.intervals(states[state],col = colors[state],ax= ax)
+
+    ax.plot(t_fr,pyr_fr,colors['BLA']['BLA'])
+    ax.plot(t_fr,int_fr-5,'k--')
+    ax.plot(t_eib,eib-10,colors['EIB'])
+    ax.plot(t_cv,cv-15,colors['CV'])
+    ax.plot(t_sync,sync-20,colors['sync'])
 
 def plot_nbins(data,ax = None):
-
     ylim = {'z_eib':(-1,1),
             'cv':(1,2.5),
             'sync':(0,0.015)}
@@ -95,6 +122,9 @@ def metric_epoch_to_df(metric_name, all_states):
     return df
 
 if __name__ == '__main__':
+
+    example_session = 'Rat08-20130717'
+
     plt.ion()
     data = load_data('processed_data/network_metrics')
     metrics_to_pop = ['eib']
@@ -103,22 +133,26 @@ if __name__ == '__main__':
         for m in metrics_to_pop: d.pop(m)
 
     # gridspec_kw={'width_ratios':[3,6,2,2,2]}
-    fig,ax = plt.subplots(2,3,sharex='col',figsize = (12,8),squeeze=False)
+    # fig,ax = plt.subplots(2,3,sharex='col',figsize = (12,8),squeeze=False)
+    fig,ax = plt.subplot_mosaic('''
+                                AAA
+                                BCD''',figsize = (12,8))
 
     # for i in range(len(ax)):
     #     ax[i,2].sharey(ax[i,3])
     #     ax[i,3].sharey(ax[i,4])
-
-    plot_epochs(data['merged_sessions']['epochs'],ax[0,:])
-    plot_epochs(data['merged_sessions']['thirds'],ax = ax[1,:])
+    plot_examples(data['unique_sessions'][example_session],0,20000,ax['A'])
+    plot_epochs(data['merged_sessions']['epochs'],(ax['B'],ax['C'],ax['D']))
+    # plot_epochs(data['merged_sessions']['thirds'],ax = ax[1,:])
     # plot_nbins(data['merged_sessions']['nbins'],ax[:,2:])
-    for a in ax.flatten(): plot.clean_axes(a)
-    ax[0,0].set_ylim(-3,5)
-    ax[0,1].set_ylim(0,6)
-    ax[0,2].set_ylim(-0.02,0.08)
+    for a in ax.values(): plot.clean_axes(a)
+    ax['A'].set_xlim(2000,2000+3600)
+    ax['B'].set_ylim(-3,5)
+    ax['C'].set_ylim(0,6)
+    ax['D'].set_ylim(-0.02,0.08)
     fig.tight_layout()
     plt.show()
     fig.savefig('output.png')
-    fig.savefig('plots/figures/network_metrics.svg')
+    fig.savefig('plots/figures/network_metrics2.svg')
 
     # plt.close(fig)
