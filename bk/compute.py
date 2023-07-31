@@ -1,14 +1,12 @@
-from dataclasses import replace
-import numpy as np
-import neuroseries as nts
-from tqdm import tqdm
 import os
-import scipy.stats
-import pandas as pd
-import itertools as it
+from typing import Dict
 
-from typing import Union, Optional,Tuple, Dict, Sequence
-from numpy.typing import ArrayLike
+import numpy as np
+import pandas as pd
+import scipy.stats
+from tqdm import tqdm
+
+import neuroseries as nts
 
 
 def speed(pos,value_gaussian_filter, columns_to_drop=None):

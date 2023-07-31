@@ -1,9 +1,8 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
-from bk import io,plot
-import seaborn as sns
+from bk import io, plot
 from settings import oscillations_bands_mod
 
 

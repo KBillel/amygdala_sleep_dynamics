@@ -1,27 +1,23 @@
 import os
-import pickle
 import re
-import sys
 import time
 import xml.etree.ElementTree as ET
 from cmath import isfinite
-from threading import local
+#### Remi imports :
+from pathlib import Path
+from typing import Union, Optional, Tuple, Dict, Sequence
 
-import matplotlib.pyplot as plt
-import neuroseries as nts
 import numpy as np
 import pandas as pd
 import scipy.io
 from IPython.display import clear_output
+from numpy.typing import ArrayLike
 from tqdm import tqdm
 
 import bk.compute
-
-#### Remi imports : 
-from pathlib import Path
-from typing import Union, Optional,Tuple, Dict, Sequence
-from numpy.typing import ArrayLike
+import neuroseries as nts
 from settings import upath
+
 
 def session_list(base_folder:Optional[Union[str,Path]] = upath['base_folder'])->pd.DataFrame:
     """
@@ -426,7 +422,6 @@ def pos(save=False):
     # Return a NeuroSeries DataFrame of position whith the time as index
 
     #     session_path = get_session_path(session_name)
-    import csv
 
     pos_clean = scipy.io.loadmat(path + "/posClean.mat")["posClean"]
     #     if save == True :
@@ -837,7 +832,6 @@ def lfp_in_intervals(session, channel, intervals):
 
 
 def digitalin_old(local_path=None, nchannels=16, Fs=20000):
-    import pandas as pd
     if local_path is None:
         local_path = session+'-digitalin.dat'
 

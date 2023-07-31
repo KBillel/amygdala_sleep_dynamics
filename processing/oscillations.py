@@ -1,31 +1,15 @@
-from settings import upath, states_nbins, min_durations, colors, oscillations_bands
+from pathlib import Path
+from typing import Union, Tuple, Dict
 
+import numpy as np
 from scipy.signal import spectrogram
 from scipy.stats import zscore
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-import numpy as np
-
-from bk import load
-from bk import stats
-from bk import compute
-from bk import plot
-from bk import io
-
-import neuroseries as nts
-
 from tqdm import tqdm
-from functools import reduce
-import shelve
 
-from pathlib import Path
-from typing import Union, Optional, Tuple, Dict, List
-from numpy.typing import ArrayLike
-
-
-from transitions import find_transitions
-from network_metrics import make_epochs_average, clean_metrics
+from bk import io
+from bk import load
+from processing.network_metrics import make_epochs_average, clean_metrics
+from settings import upath, states_nbins, min_durations, oscillations_bands
 
 
 def average_by_band(f, Sxx, band, norm=False):
