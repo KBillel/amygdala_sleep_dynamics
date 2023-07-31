@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd 
-import neuroseries as nts
-import bk.compute
 import scipy.stats
+
+import bk.compute
+import neuroseries as nts
+
 
 def rasterPlot(neurons,window = None,col = 'black',width= 0.5,height = 1,offsets = 1, ax=None):
     if ax is None:

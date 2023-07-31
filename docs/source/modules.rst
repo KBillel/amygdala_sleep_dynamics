@@ -1,5 +1,5 @@
-Sleep_Homeostasis_Amygdala
-==========================
+amygdala_sleep_dynamics
+=======================
 
 .. toctree::
    :maxdepth: 4

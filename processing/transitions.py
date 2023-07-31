@@ -1,26 +1,16 @@
-from settings import upath, states_nbins, min_durations,extended_params,colors
+from pathlib import Path
+from typing import Union, Tuple, Dict, List
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 import numpy as np
-
-from bk import load
-from bk import stats
-from bk import compute
-from bk import plot
-from bk import io
+import pandas as pd
+from numpy.typing import ArrayLike
+from tqdm import tqdm
 
 import neuroseries as nts
-
-from tqdm import tqdm
-from functools import reduce
-import shelve
-
-from pathlib import Path
-from typing import Union, Optional, Tuple, Dict, List
-from numpy.typing import ArrayLike
-
+from bk import compute
+from bk import io
+from bk import load
+from settings import upath, states_nbins, min_durations, extended_params
 
 
 def check_continuity(block: nts.IntervalSet, cont_th: float = 1.5) -> bool:

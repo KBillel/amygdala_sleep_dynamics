@@ -1,21 +1,18 @@
-import numpy as np
-import bk.compute
-import bk.multi
-import scipy.stats as ss
-import neuroseries as nts
-import pandas as pd
-
+from dataclasses import dataclass
 # Remi imports :
-from pathlib import Path
-from typing import Union, Optional, Tuple, Dict, Sequence,List
+from typing import Optional, Tuple, List
+
+import numpy as np
+import pandas as pd
+import scipy.stats as ss
 from numpy.typing import ArrayLike
-from settings import upath
-
-
 from serde import serde
 from serde.json import to_json
 
-from dataclasses import dataclass
+import bk.compute
+import bk.multi
+import neuroseries as nts
+
 
 def poisson(baseRate:float, counts:int, time:float) -> Tuple[float, float, float]:
     """
@@ -175,4 +172,3 @@ class List_Stats:
     def save(self,path:str):
         with open(path,'w') as jf:
             jf.write(to_json(self,indent = 4))
-    

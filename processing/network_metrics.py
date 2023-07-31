@@ -1,30 +1,20 @@
-from settings import upath,min_durations,states_nbins,network_metrics_params
+from pathlib import Path
+from typing import Union, Optional, Tuple, Dict
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 import numpy as np
+import pandas as pd
+from numpy.typing import ArrayLike
 from scipy.stats import zscore
-
-from bk import load
-from bk import stats
-from bk import compute
-from bk import plot
-from bk import io
-from bk import misc
+from tqdm import tqdm
 
 import neuroseries as nts
+from bk import compute
+from bk import io
+from bk import load
+from bk import misc
+from processing.transitions import find_transitions
+from settings import upath, min_durations, states_nbins, network_metrics_params
 
-from tqdm import tqdm
-from functools import reduce
-import shelve
-
-from pathlib import Path
-from typing import Union, Optional, Tuple, Dict, Sequence
-from numpy.typing import ArrayLike
-
-
-from transitions import find_transitions
 
 def check_session(metadata,stru,min_pyr,min_int):
     npyr =  np.sum((metadata.Region == stru) & (metadata.Type == 'Pyr'))

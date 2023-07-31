@@ -1,17 +1,13 @@
+import matplotlib.pyplot as plt
+
 from bk import io
 from bk import plot
-from bk.misc import filter_neurons
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+
 plt.rcParams['svg.fonttype'] = 'none'
 from scipy.stats import zscore
-import json
 
 from settings import colors
 
-from typing import Union, Optional, Tuple, Dict, Sequence
-from numpy.typing import ArrayLike
 
 def plot_oscillations(values,ax = None):
     if ax is None:

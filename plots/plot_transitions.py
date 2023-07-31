@@ -1,16 +1,17 @@
+import json
+from typing import Sequence
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from numpy.typing import ArrayLike
+from scipy.stats import zscore, linregress
+
 from bk import io
 from bk import plot
 from bk.misc import filter_neurons
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from scipy.stats import zscore,linregress
-import json
-
 from settings import colors
 
-from typing import Union, Optional, Tuple, Dict, Sequence
-from numpy.typing import ArrayLike
 
 def set_rem_labels(df):
     rem_on = df.pInc <= 0.001

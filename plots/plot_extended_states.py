@@ -1,19 +1,9 @@
-import numpy as np
-import pandas as pd
-
-import seaborn as sns
 import matplotlib.pyplot as plt
-import neuroseries as nts
-from bk import plot
+import numpy as np
+
 from bk import io
-from typing import Union, Optional,Tuple, Dict, Sequence
-
-from statannotations.Annotator import Annotator
+from bk import plot
 from settings import colors
-import itertools
-
-
-
 
 if __name__ == '__main__':
     

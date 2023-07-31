@@ -1,26 +1,17 @@
-from settings import upath, states_nbins, min_durations, colors, oscillations_bands_mod
+from pathlib import Path
+from typing import Union, Tuple, Dict
 
-from scipy.signal import spectrogram
-from scipy.stats import zscore
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 import numpy as np
-
-from bk import signal
-from bk import load
-from bk import stats
-from bk import compute
-from bk import plot
-from bk import io
-
-import neuroseries as nts
-
+import pandas as pd
 from tqdm import tqdm
 
-from pathlib import Path
-from typing import Union, Optional, Tuple, Dict, List
-from numpy.typing import ArrayLike
+import neuroseries as nts
+from bk import compute
+from bk import io
+from bk import load
+from bk import signal
+from bk import stats
+from settings import upath, min_durations, oscillations_bands_mod
 
 
 def circular_mean(phases,weights):

@@ -1,17 +1,17 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.stats
-from scipy.stats import linregress
 import seaborn as sns
-import matplotlib.pyplot as plt
+from scipy.stats import linregress
+
 plt.rcParams['svg.fonttype'] = 'none'
 from bk import plot
 from bk import io
-from statannotations.Annotator import Annotator
 
 import neuroseries as nts
 
-from typing import Union, Optional,Tuple, Dict, Sequence
+from typing import Tuple, Dict, Sequence
 from settings import colors
 def average_by_equal_sized_group(df:pd.DataFrame,nbins:int)->Tuple[pd.DataFrame]:
     """

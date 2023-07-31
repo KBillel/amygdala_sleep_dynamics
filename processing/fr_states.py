@@ -1,28 +1,22 @@
-from settings import upath,min_durations
-
+import inspect
 import json
+from functools import reduce, wraps
 from hashlib import sha256
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-import numpy as np
-import scipy.stats
+from pathlib import Path
+from typing import Union, Tuple, Dict, Sequence, List
 
-from bk import load
-from bk import stats
-from bk import compute
-from bk import io
+import numpy as np
+import pandas as pd
+import scipy.stats
+from numpy.typing import ArrayLike
+from tqdm import tqdm
 
 import neuroseries as nts
-
-from tqdm import tqdm
-from functools import reduce, wraps
-import inspect
-import shelve
-
-from pathlib import Path
-from typing import Union, Optional, Tuple, Dict, Sequence, List
-from numpy.typing import ArrayLike
+from bk import compute
+from bk import io
+from bk import load
+from bk import stats
+from settings import upath, min_durations
 
 FORCE = True
 

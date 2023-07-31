@@ -1,26 +1,19 @@
-import numpy as np
-import pandas as pd
-
-import seaborn as sns
-import matplotlib.pyplot as plt
-
-from bk import plot
-from bk import io
-from bk.stats import Stats, List_Stats,from_statannon,from_scipy
-from typing import Union, Optional,Tuple, Dict, Sequence
-import scipy.stats
-from statannotations.Annotator import Annotator
-from settings import colors
 import itertools
-from scipy.stats import linregress,kruskal
-
-from dataclasses import dataclass
-from serde import serde
 import json
 
-from matplotlib.ticker import LogFormatter
-from plot_transitions import plot_activity_at_transitions
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy.stats
+import seaborn as sns
+from scipy.stats import linregress, kruskal
+from statannotations.Annotator import Annotator
 
+from bk import io
+from bk import plot
+from bk.stats import from_statannon, from_scipy
+from plot_transitions import plot_activity_at_transitions
+from settings import colors
 
 
 def set_rem_labels(df):
