@@ -20,6 +20,22 @@ processing.network\_metrics module
    :undoc-members:
    :show-inheritance:
 
+processing.oscillations module
+------------------------------
+
+.. automodule:: processing.oscillations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+processing.oscillations\_mod module
+-----------------------------------
+
+.. automodule:: processing.oscillations_mod
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 processing.transitions module
 -----------------------------
 
