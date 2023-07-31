@@ -330,8 +330,8 @@ def save_data(session, metadata, binned_fr_extended,params):
 
     Parameters
     ----------
-    session : _type_
-    metadata : _type_
+    session : dict
+    metadata : pd.DataFrame
     binned_fr_extended : _type_
     params : _type_
     """

@@ -49,6 +49,13 @@ colors = {'NREM': '#808080ff',
         # 'sync':'#355070',
         # 'EIB':'#e27208ff',
         # 'CV':'#B56576'}
+full_name_quantiles = {
+                  'VH': 'Very High',
+                  'H': 'High',
+                  'M': 'Medium',
+                  'L': 'Low',
+                  'VL': 'Very Low',}
+
 
 min_durations = {
     'NREM': 200,

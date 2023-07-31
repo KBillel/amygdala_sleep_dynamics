@@ -9,8 +9,8 @@ Welcome to Amygdala Sleep Dynamics's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-   usage/installation
-   usage/howto
+
+   usage/BLA_active_REM
 
 
 

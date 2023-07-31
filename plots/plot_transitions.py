@@ -2,6 +2,7 @@ import json
 from typing import Sequence
 
 import matplotlib.pyplot as plt
+
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
@@ -10,8 +11,10 @@ from scipy.stats import zscore, linregress
 from bk import io
 from bk import plot
 from bk.misc import filter_neurons
-from settings import colors
+from settings import colors,full_name_quantiles
 
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
 
 def set_rem_labels(df):
     rem_on = df.pInc <= 0.001
@@ -117,20 +120,20 @@ def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None
     else:
         # y_ = np.nanmean(activity_pyr,0)
         # ax.plot(y_,c = colors_stru[stru])
-        plot.confidence_intervals(range(activity_pyr.shape[1]),activity_pyr[metadata_pyr['REM_label'] == 'REM_ON'],style = colors_stru[stru],ax = ax,alpha = 0.2)
-        plot.confidence_intervals(range(activity_pyr.shape[1]),activity_pyr[metadata_pyr['REM_label'] == 'REM_OFF'],style = 'r',ax = ax,alpha = 0.2)
-        r,p = compute_corr(activity_pyr[metadata_pyr['REM_label'] == 'REM_ON'])
+        plot.confidence_intervals(range(activity_pyr.shape[1]),activity_pyr,style = colors_stru[stru],ax = ax,alpha = 0.2)
+        # plot.confidence_intervals(range(activity_pyr.shape[1]),activity_pyr[metadata_pyr['REM_label'] == 'REM_OFF'],style = 'r',ax = ax,alpha = 0.2)
+        r,p = compute_corr(activity_pyr)
         ax.text(0.25,0.9,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = colors_stru[stru])
-        r,p = compute_corr(activity_pyr[metadata_pyr['REM_label'] == 'REM_OFF'])
-        ax.text(0.25,0.8,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = 'r')
+        # r,p = compute_corr(activity_pyr[metadata_pyr['REM_label'] == 'REM_OFF'])
+        # ax.text(0.25,0.8,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = 'r')
 
         max_average.append(np.max(np.nanmean(activity_pyr,0)))
         min_average.append(np.min(np.nanmean(activity_pyr,0)))
         
-    # ax.plot(np.nanmean(activity_int,0),'k--')
-    # plot.confidence_intervals(range(activity_int.shape[1]),activity_int,style = 'k',ax = ax,alpha = 0.2)
-    # r,p = compute_corr(activity_int)
-    # ax.text(0.25,1,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = 'k')
+    ax.plot(np.nanmean(activity_int,0),'k--')
+    plot.confidence_intervals(range(activity_int.shape[1]),activity_int,style = 'k',ax = ax,alpha = 0.2)
+    r,p = compute_corr(activity_int)
+    ax.text(0.25,1,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = 'k')
     max_average.append(np.max(np.nanmean(activity_int,0)))
     min_average.append(np.min(np.nanmean(activity_int,0)))
 
@@ -141,8 +144,13 @@ def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None
     return ax,min_average,max_average
 
 
-def plot_all_transitions(transitions, df_firing_rates, stru,state, params, transitions_of_interest, ax):
+def plot_all_transitions(transitions, df_firing_rates, stru,state, params, transitions_of_interest, ax,plot_zscore = True):
     
+
+    zscore_idx = 0
+    log_idx = 0+int(plot_zscore)
+    zscore_quantiles_idx = 1 + int(plot_zscore)
+
     for i,(transition_name,baseline )in enumerate(transitions_of_interest.items()):
         states = transition_name.split('-')
         bin_state = [(s,params['nbins'][s]) for s in states]
@@ -151,11 +159,15 @@ def plot_all_transitions(transitions, df_firing_rates, stru,state, params, trans
         c_activity = c_transitions['activity']
         c_metadata = pd.merge(c_transitions['metadata'],df_firing_rates,on = ['Rat','Day','Shank','Id','Region','Type'],how='left')
         print(transition_name, c_transitions['n_transitions'])
-        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'zscore',quantile=None,ax=ax[0,i],bin_state = bin_state)
-        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'None',quantile=state,ax=ax[1,i],bin_state = bin_state)
-        ax[1,i].semilogy()
-        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'zscore',quantile=state,ax=ax[2,i],bin_state = bin_state)
-        ax[2,i].set_xlabel('Times (bins)')
+        if plot_zscore:
+            plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'zscore',quantile=None,ax=ax[zscore_idx,i],bin_state = bin_state)
+            ax[zscore_idx,i].set_title(transition_name)
+            ax[zscore_idx,0].set_ylabel('FR (zscore)')
+
+        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'None',quantile=state,ax=ax[log_idx,i],bin_state = bin_state)
+        ax[log_idx,i].semilogy()
+        plot_activity_at_transitions(c_activity,c_metadata,stru,norm = 'zscore',quantile=state,ax=ax[zscore_quantiles_idx,i],bin_state = bin_state)
+        ax[zscore_quantiles_idx,i].set_xlabel('Times (bins)')
 
         # ax_baseline,ymin,ymax = plot_activity_at_transitions(c_activity,c_metadata,stru,norm = baseline,quantile= state,ax=ax[2,i],bin_state = bin_state)
         # ymin = min(ymin)*0.8
@@ -166,15 +178,13 @@ def plot_all_transitions(transitions, df_firing_rates, stru,state, params, trans
         # new_ymax = max(ymax,old_ylim[1])
 
         # ax[2,0].set_ylim(new_ymin,new_ymax)
-        ax[0,i].set_title(transition_name)
     
     for i in ax.flatten():
         plot.clean_axes(i)
     
     
-    ax[0,0].set_ylabel('FR (zscore)')
-    ax[1,0].set_ylabel('FR (Hz)')
-    ax[2,0].set_ylabel('FR (zscore)')
+    ax[log_idx,0].set_ylabel('FR (Hz)')
+    ax[zscore_quantiles_idx,0].set_ylabel('FR (zscore)')
     # ax[1,0].set_ylim(-1.5,1.5)
     # ax[2,0].set_ylim(75,250)
     plt.tight_layout()
@@ -230,7 +240,116 @@ def plot_histogram_fr(df,stru,params,ax):
 
 
 
+def make_figure_transition(transitions,
+                           network_metrics_transitions,
+                           df_firing_rates,
+                           transitions_of_interest,
+                           params,
+                           quantile_state = 'WAKE_HOMECAGE',
+                           plot_network_metrics = True,
+                           ax = None,
+                           plot_zscore = True):
+    if ax is None:
+        fig,ax = plt.subplots(3+int(plot_network_metrics),len(transitions_of_interest),figsize = (12,8),sharey='row',sharex='col',squeeze=False)
+    else:
+        fig = ax.reshape(-1)[0].figure
+    if plot_network_metrics:
+        plot_all_network_metrics(network_metrics_transitions,transitions_of_interest,params,ax = ax[0,:])
+    else:
+        plot_all_transitions(transitions, df_firing_rates,stru,quantile_state, params, transitions_of_interest, ax,plot_zscore)
+
+    
+    ax[0,0].set_ylim(-1,1)
+    ax[-1,0].set_ylim(-1,1)
+
+    return fig,ax
+
+
+def fig3_firing_rates_epochs(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state):
+    
+    transitions_of_interest = {'WAKE_HOMECAGE':[0,30],
+                               'NREM':[0,30],
+                               'REM':[0,12]}
+    
+    fig,ax = plt.subplots(3,3,figsize = (16,8),sharey = 'row')
+    make_figure_transition(transitions,
+                           network_metrics_transitions,
+                           df_firing_rates,
+                           transitions_of_interest,
+                           params,
+                           quantile_state,
+                           plot_network_metrics = False,
+                           ax = ax)
+    
+    l_Path = [Patch(facecolor=colors['WAKE_HOMECAGE'],edgecolor='none',label = 'WAKE_HOMECAGE'),
+              Patch(facecolor=colors['NREM'],edgecolor='none',label = 'NREM'),
+              Patch(facecolor=colors['REM'],edgecolor='none',label = 'REM')]
+    
+    l_Line2D = [Line2D((),(),2,color=colors['BLA'][q],label = full_name_quantiles[q]) for q in colors['BLA'] if q != 'BLA']
+
+
+    fig.tight_layout(rect=(0,0,0.85,1))
+    ax[0,-1].legend(handles = l_Path,bbox_to_anchor = (1,1))
+    ax[1,-1].legend(handles = l_Line2D,bbox_to_anchor = (1,1))
+
+
+    fig.savefig(f'plots/figures/test.svg')
+    fig.savefig('output.png')
+
+def figs2_firing_rates_transitions(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state):
+    transitions_of_interest = {
+                               'WAKE_HOMECAGE-NREM':[20,30],
+                               'REM-NREM':[8,12],
+                               'REM-WAKE_HOMECAGE':[8,12]}
+    
+    fig,ax = plt.subplots(2,3,figsize = (12,5))
+    make_figure_transition(transitions,
+                           network_metrics_transitions,
+                           df_firing_rates,
+                           transitions_of_interest,
+                           params,
+                           quantile_state,
+                           plot_network_metrics = False,
+                           ax = ax,
+                           plot_zscore=False)
+    
+    fig.tight_layout()
+    fig.savefig(f'plots/figures/test.svg')
+    fig.savefig('output.png')
+
+
+def figs6_network_metrics_transitions(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state):
+    transitions_of_interest = {
+                               'WAKE_HOMECAGE-NREM':[20,30],
+                               'NREM-REM':[0,30],
+                               'REM-NREM':[8,12],
+                               'REM-WAKE_HOMECAGE':[8,12]}
+    
+    fig,ax = plt.subplots(1,4,figsize = (12,3),squeeze=False,sharey = True)
+    make_figure_transition(transitions,
+                           network_metrics_transitions,
+                           df_firing_rates,
+                           transitions_of_interest,
+                           params,
+                           quantile_state,
+                           plot_network_metrics = True,
+                           ax = ax,
+                           plot_zscore=False)
+    
+    ax[0,0].set_ylim(-2,2)
+    ax[0,0].set_ylabel('Network Metrics\n(zscore)')
+
+    
+
+    fig.tight_layout()
+    fig.savefig(f'plots/figures/test.svg')
+    fig.savefig('output.png')
+
+
+                           
 if __name__ == '__main__':
+
+    
 
     stru =  'BLA'
     plt.ion()
@@ -244,36 +363,14 @@ if __name__ == '__main__':
     with open('processed_data/transitions.json','r') as jf:
         params = json.load(jf)
 
-    transitions_of_interest = {
-                               'WAKE_HOMECAGE':[0,30],
-                               'NREM':[0,30],
-                               'REM':[0,12],
-                            'NREM-REM':[20,30]
-                            #    'WAKE_HOMECAGE-NREM':[20,30],
-                            #    'NREM-REM':[20,30],
-                            #    'REM-NREM':[8,12],
-                            # 'NREM-REM-NREM':[1,2],
-                            # 'REM-NREM-REM':[1,2],
-                            # 'NREM-REM-WAKE_HOMECAGE':[1,2]
-                            #    'REM-WAKE_HOMECAGE':[8,12],
-                            #    'WAKE_HOMECAGE-extended_sleep-WAKE_HOMECAGE':[50,60],
-                            # 'REM-NREM-REM':[22,32]
-                            }
 
-    
-    quantiles_states = ['WAKE_HOMECAGE']
-    for state in quantiles_states:
-        fig,ax = plt.subplots(3,len(transitions_of_interest),figsize = (12,8),sharey='row',sharex='col',squeeze=False)
-        
-        plot_all_transitions(transitions, df_firing_rates,stru,state, params, transitions_of_interest, ax)
-        # plot_all_network_metrics(network_metrics_transitions,transitions_of_interest,params,ax = ax[2,:])
-        ax[0,0].set_ylim(-1,1)
+    quantile_state = 'WAKE_HOMECAGE'
 
-        ax[2,0].set_ylim(-1,1)
-        fig.tight_layout()
-        fig.savefig(f'plots/figures/transition_epochs-sleep-z.svg')
-        fig.savefig('output.png')
-        
+
+
+    fig3_firing_rates_epochs(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state)
+    # figs2_firing_rates_transitions(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state)
+    # figs6_network_metrics_transitions(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state)
 
     # fig,ax = plt.subplots(1,3,figsize = (12,4),sharey = True)
     # plot_histogram_fr(df_firing_rates,stru,params,ax)
@@ -283,3 +380,21 @@ if __name__ == '__main__':
     # fig.tight_layout()
     # fig.savefig('plots/figures/histograms.svg')
     # plt.show()
+
+
+
+    # transitions_of_interest = {
+    #                            'WAKE_HOMECAGE':[0,30],
+    #                            'NREM':[0,30],
+    #                            'REM':[0,12],
+    #                         #    'NREM-REM':[20,30]
+    #                         #    'WAKE_HOMECAGE-NREM':[20,30],
+    #                         #    'NREM-REM':[20,30],
+    #                         #    'REM-NREM':[8,12],
+    #                         # 'NREM-REM-NREM':[1,2],
+    #                         # 'REM-NREM-REM':[1,2],
+    #                         # 'NREM-REM-WAKE_HOMECAGE':[1,2]
+    #                         #    'REM-WAKE_HOMECAGE':[8,12],
+    #                         #    'WAKE_HOMECAGE-extended_sleep-WAKE_HOMECAGE':[50,60],
+    #                         # 'REM-NREM-REM':[22,32]
+    #                         }

@@ -12,7 +12,7 @@ from statannotations.Annotator import Annotator
 from bk import io
 from bk import plot
 from bk.stats import from_statannon, from_scipy
-from plot_transitions import plot_activity_at_transitions
+from plots.plot_transitions import plot_activity_at_transitions
 from settings import colors
 
 
@@ -34,6 +34,7 @@ def boxenplot_firing_rates(df,stru,ax = None):
     if ax is None:
         fig,ax = plt.subplots()
 
+    #FIXME States should be a params like in cumsum_curves_firing_rates
     states = ['REM','NREM','WAKE_HOMECAGE']
     pairs = [[('Pyr', 'NREM'), ('Pyr', 'REM')],
              [('Pyr', 'NREM'), ('Pyr', 'WAKE_HOMECAGE')],
