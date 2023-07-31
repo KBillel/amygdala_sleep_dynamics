@@ -43,6 +43,8 @@ def plot_examples(data,start,stop,ax):
     ax.plot(t_cv,cv-15,colors['CV'])
     ax.plot(t_sync,sync-20,colors['sync'])
 
+    ax.set_xlabel('Time (s)')
+
 def plot_nbins(data,ax = None):
     ylim = {'z_eib':(-1,1),
             'cv':(1,2.5),
@@ -76,8 +78,8 @@ def plot_epochs(data,ax = None):
             sns.boxenplot(**plotting_params)
             annotator = Annotator(pairs = pairs,**plotting_params)
             _,stats_data = annotator.configure(test="Mann-Whitney",comparisons_correction = 'Bonferroni').apply_and_annotate()
-
-
+            kruskal_stats = kruskal(*[df[df['state'] == s][metric_name] for s in np.unique(df.state)])
+            print(metric_name,kruskal_stats)
         else:
             df.times[df.times==0] = 'First'
             df.times[df.times==1] = 'Middle'
@@ -101,7 +103,7 @@ def plot_epochs(data,ax = None):
                                 'y':metric_name,
                                 'ax':ax[i],
                                 'hue':'times'}
-            
+            print(f'Metric Name:{metric_name}')
             sns.boxenplot(**plotting_params)
             annotator = Annotator(pairs = pairs,**plotting_params)
             _,stats_data = annotator.configure(test="Wilcoxon",comparisons_correction = 'Bonferroni').apply_and_annotate()
@@ -123,8 +125,7 @@ def metric_epoch_to_df(metric_name, all_states):
 
 if __name__ == '__main__':
 
-    example_session = 'Rat08-20130717'
-
+    example_session = 'Rat09-20140401'
     plt.ion()
     data = load_data('processed_data/network_metrics')
     metrics_to_pop = ['eib']
@@ -134,25 +135,24 @@ if __name__ == '__main__':
 
     # gridspec_kw={'width_ratios':[3,6,2,2,2]}
     # fig,ax = plt.subplots(2,3,sharex='col',figsize = (12,8),squeeze=False)
-    fig,ax = plt.subplot_mosaic('''
-                                AAA
-                                BCD''',figsize = (12,8))
+    
 
     # for i in range(len(ax)):
     #     ax[i,2].sharey(ax[i,3])
     #     ax[i,3].sharey(ax[i,4])
+    fig,ax = plt.subplot_mosaic('''
+                        AAA
+                        BCD''',figsize = (12,8))
     plot_examples(data['unique_sessions'][example_session],0,20000,ax['A'])
-    plot_epochs(data['merged_sessions']['epochs'],(ax['B'],ax['C'],ax['D']))
-    # plot_epochs(data['merged_sessions']['thirds'],ax = ax[1,:])
+    # plot_epochs(data['merged_sessions']['epochs'],(ax['B'],ax['C'],ax['D']))
+    plot_epochs(data['merged_sessions']['thirds'],(ax['B'],ax['C'],ax['D']))
     # plot_nbins(data['merged_sessions']['nbins'],ax[:,2:])
     for a in ax.values(): plot.clean_axes(a)
-    ax['A'].set_xlim(2000,2000+3600)
-    ax['B'].set_ylim(-3,5)
-    ax['C'].set_ylim(0,6)
-    ax['D'].set_ylim(-0.02,0.08)
+    ax['A'].set_xlim(12500,12500+3600*2)
+    # ax['B'].set_ylim(-3,5)
+    # ax['C'].set_ylim(0,6)
+    # ax['D'].set_ylim(-0.02,0.08)
     fig.tight_layout()
     plt.show()
-    fig.savefig('output.png')
-    fig.savefig('plots/figures/network_metrics2.svg')
-
-    # plt.close(fig)
+    fig.savefig(f'output.png')
+    # fig.savefig('plots/figures/network_metrics3.svg')

@@ -23,18 +23,22 @@ def plot_oscillations(values,ax = None):
 def plot_all_oscillations(oscillations,ax = None):
     for side,c_side in oscillations.items():
         for i,(band,c_band) in enumerate(c_side.items()):
-            for j,(state,c_state) in enumerate(c_band.items()):
-                plot_oscillations(c_state,ax[i,j])
-                if i==0: ax[i,j].set_title(state)
-                if j==0: ax[i,j].set_ylabel(f'Power-{band}\n(std)')
-                ax[i,j].set_ylim(-2,2)
+            if (band == 'delta') or (band == 'theta'): 
+                for j,(state,c_state) in enumerate(c_band.items()):
+                    plot_oscillations(c_state,ax[i,j])
+                    if i==0: ax[i,j].set_title(state)
+                    if j==0: ax[i,j].set_ylabel(f'Power-{band}\n(std)')
+                    ax[i,j].set_ylim(-2,2)
 
 if __name__ == '__main__':
-    fig,ax = plt.subplots(5,3,figsize = (4,8),sharey='row',sharex='col',squeeze=False)
+    fig,ax = plt.subplots(2,3,figsize = (12,8),sharey='row',sharex='col',squeeze=False)
 
     oscillations = io.load_shelve('processed_data/oscillations')['merged_sessions']
     plot_all_oscillations(oscillations,ax)
-    for axe in ax.flatten(): plot.clean_axes(axe)
+    for axe in ax.flatten(): 
+        axe.set_xlabel('Time (bins)')
+        plot.clean_axes(axe)
     fig.tight_layout()
+    fig.savefig('output.png')
     fig.savefig('plots/figures/oscillations.svg')
     fig.show()

@@ -1,0 +1,33 @@
+{
+    "oscillations_band": {
+        "sigma": [
+            0.5,
+            20
+        ],
+        "theta": [
+            6,
+            10
+        ],
+        "beta": [
+            17,
+            28
+        ],
+        "low_gamma": [
+            35,
+            45
+        ],
+        "mid_gamma": [
+            40,
+            60
+        ],
+        "high_gamma": [
+            40,
+            80
+        ]
+    },
+    "min_durations": {
+        "NREM": 200,
+        "REM": 50,
+        "WAKE_HOMECAGE": 200
+    }
+}

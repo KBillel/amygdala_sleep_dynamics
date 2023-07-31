@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Union, Optional, Tuple, Dict, Sequence, List
 from numpy.typing import ArrayLike
 
-FORCE = False
+FORCE = True
 
 
 def check_json(json_path, saved_args):
@@ -199,7 +199,7 @@ def fr_across_extended(neurons: ArrayLike,
         current_extended = compute.extended(states, state_name, params['sleep_th'], params['wake_th'])
         across_sleep_fr[state_name] = fr_across_extended_one_state(neurons, states, binSize, params['sub_states'], current_extended)
         extended_states[state_name] = current_extended
-    return across_sleep_fr
+    return across_sleep_fr,extended_states
 
 
 @df_saver(force=FORCE)
@@ -387,12 +387,17 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
 
     id_columns = list(metadata.columns)
 
-    states = load.sleep_scoring(session, discard=discarded_states,drop_short_intervals=min_durations)
-    states['SLEEP'] = states['NREM'].union(states['REM'])
+    states = load.sleep_scoring(session, discard=discarded_states,drop_short_intervals=None)
 
-    fr_extended = fr_across_extended(neurons, metadata, params, states, binSize)
+    fr_extended, extended_states = fr_across_extended(neurons, metadata, params, states, binSize)
     binned_fr_extended = rebin_extended(fr_extended, 30)
     
+    
+    states = load.sleep_scoring(session, discard=discarded_states,drop_short_intervals=min_durations)
+    for s in states:
+        states[s] = states[s].drop('state',axis = 1)
+
+    states['SLEEP'] = states['NREM'].union(states['REM'])
 
     df_states_fr = states_fr(neurons, metadata, states)
     df_rem_on = rem_on(neurons, metadata, states)
@@ -402,7 +407,14 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     df = reduce(lambda left, right: pd.merge(
         left, right, on=id_columns), all_df)
 
+
+    states = load.sleep_scoring(session, discard=None,drop_short_intervals=None)
+    for s in states:
+        states[s] = states[s].drop('state',axis = 1)
     if save:
+        #Not clean but fastest way to save extendes and states to unique sessions for a quick supplementary figures. 
+        session['states'] = states
+        session['extended_states'] = extended_states
         save_data(session, metadata, binned_fr_extended,params)
 
     return session,df,binned_fr_extended,metadata
@@ -455,5 +467,5 @@ if __name__ == "__main__":
                        'wake_th': 60*30,
                        'sub_states': ['WAKE_HOMECAGE']}}
     save = True
-    process_all_sessions(params = params, save = True)
-    process_session(params=params, save = True)
+    process_all_sessions(params = params, save = save)
+    # process_session(params=params, save = save)

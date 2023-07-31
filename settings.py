@@ -13,6 +13,8 @@ upath = users_paths[username]
 colors = {'NREM': '#808080ff',
           'REM': '#ffa500ff',
           'WAKE_HOMECAGE': '#008bc8ff',
+          'SLEEP':'#000000ff',
+          'DROWSY':'pink',
           'extended_sleep': '#ffeeaaff',
 
           'REM_ON':'#ffa500ff',
@@ -41,9 +43,12 @@ colors = {'NREM': '#808080ff',
                   'VL': '#ff33ffff',
           },
         0:'#808080ff',
-        'sync':'#355070',
-        'EIB':'#6D597A',
-        'CV':'#B56576'}
+        'sync':'#2C4251',
+        'EIB':'#D16666',
+        'CV':'#A288E3'}
+        # 'sync':'#355070',
+        # 'EIB':'#e27208ff',
+        # 'CV':'#B56576'}
 
 min_durations = {
     'NREM': 200,
@@ -75,6 +80,17 @@ oscillations_bands = {
     'mid_gamma':[40,80],
     'high_gamma':[80,100]
 }
+
+
+oscillations_bands_mod = {
+    'sigma':[0.5,20],
+    'theta':[6,10],
+    'beta':[17,28],
+    'low_gamma':[35,45],
+    'mid_gamma':[40,60],
+    'high_gamma':[40,80]
+}
+
 extended_params = {'sleep': {'sleep_th': 60*30,
                         'wake_th': 60,
                         'sub_states': ['NREM', 'REM']},

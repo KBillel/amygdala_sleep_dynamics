@@ -304,8 +304,8 @@ def process_session(base_folder: Union[Path, str] = upath['base_folder'],
     transitions.update(find_transitions(states_wake_extended, n_states=3, min_durations=min_durations))
     
     activity = compute_transitions_activity(neurons, transitions, nbins)
-    effect_of_extended = effect_extended(neurons,metadata,states,extended_params)
-    return(effect_of_extended)
+    # effect_of_extended = effect_extended(neurons,metadata,states,extended_params)
+    # return(effect_of_extended)
 
     if save:
         save_data(session,metadata, transitions, activity,nbins, min_durations)
@@ -337,11 +337,14 @@ def append_transitions(concatenated_transitions:Dict[str,Dict], c_transitions:Di
     Dict[str,Dict]
     """
     c_metadata = c_transitions['metadata']
+    n_transitions = {}
     for transitions_name, c_activity in c_transitions['activity'].items():
         prev_activity = concatenated_transitions.get(transitions_name,{'activity':[],
-                                                                       'metadata':[]})
+                                                                       'metadata':[],
+                                                                       'n_transitions':0})
         prev_activity['activity'].append(np.nanmean(c_activity, 2)) #Average for all same transitions for each neuron
         prev_activity['metadata'].append(c_metadata)
+        prev_activity['n_transitions'] += c_activity.shape[2]
         concatenated_transitions[transitions_name] = prev_activity
     return concatenated_transitions
 
@@ -409,7 +412,7 @@ def process_all_sessions(base_folder: Union[Path, str] = upath['base_folder'],
     io.save_shelve('processed_data/transitions',
                     {'merged_sessions':merged})
 
-    return all_sessions
+    return merged
 
 def crop_interval(interval,keep,from_end = True):
     interval = interval.copy()
@@ -455,7 +458,7 @@ def effect_extended(neurons,metadata,states,params):
 if __name__ == '__main__':
 
     save = True
-    force = True
+    force = False
     
     # session = load.session()
     # states = load.sleep_scoring(session)
@@ -463,6 +466,7 @@ if __name__ == '__main__':
 
     # transitions = effect_extended(neurons,metadata,states,extended_params)
 
-    # all_session = process_all_sessions(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
+    all_session = process_all_sessions(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
+
     
-    fr = process_session(min_durations = min_durations,nbins = states_nbins, save = save,force = force)
+    # fr = process_session(local_path='Rat08/Rat08-20130717',min_durations = min_durations,nbins = states_nbins, save = save,force = force)

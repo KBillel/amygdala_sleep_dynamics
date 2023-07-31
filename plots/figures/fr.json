@@ -7,8 +7,8 @@
                 261,
                 261
             ],
-            "pvalue":0.0005454155667761455,
-            "stat_value":12318.0,
+            "pvalue":0.00010008040919647514,
+            "stat_value":11840.0,
             "name":"('Int', 'REM') vs ('Int', 'WAKE_HOMECAGE')",
             "n_total":522
         },
@@ -16,25 +16,25 @@
             "panel_name":"FR_States",
             "test":"Wilcoxon test (paired samples)",
             "n":[
-                1776,
-                1776
+                1777,
+                1777
             ],
-            "pvalue":2.9360542932488175e-38,
-            "stat_value":506481.0,
+            "pvalue":1.4204797500410148e-41,
+            "stat_value":494193.0,
             "name":"('Pyr', 'NREM') vs ('Pyr', 'REM')",
-            "n_total":3552
+            "n_total":3554
         },
         {
             "panel_name":"FR_States",
             "test":"Wilcoxon test (paired samples)",
             "n":[
-                1776,
-                1776
+                1777,
+                1777
             ],
-            "pvalue":2.5826388173064604e-131,
-            "stat_value":260361.0,
+            "pvalue":4.018366956831241e-90,
+            "stat_value":351958.0,
             "name":"('Pyr', 'REM') vs ('Pyr', 'WAKE_HOMECAGE')",
-            "n_total":3552
+            "n_total":3554
         },
         {
             "panel_name":"FR_States",
@@ -43,8 +43,8 @@
                 261,
                 261
             ],
-            "pvalue":8.370489758686589e-17,
-            "stat_value":6676.0,
+            "pvalue":3.2836751487367073e-21,
+            "stat_value":5329.0,
             "name":"('Int', 'NREM') vs ('Int', 'REM')",
             "n_total":522
         },
@@ -55,8 +55,8 @@
                 261,
                 261
             ],
-            "pvalue":6.635475264624437e-05,
-            "stat_value":11730.0,
+            "pvalue":4.1355921799646377e-07,
+            "stat_value":10511.0,
             "name":"('Int', 'NREM') vs ('Int', 'WAKE_HOMECAGE')",
             "n_total":522
         },
@@ -64,13 +64,13 @@
             "panel_name":"FR_States",
             "test":"Wilcoxon test (paired samples)",
             "n":[
-                1776,
-                1776
+                1777,
+                1777
             ],
-            "pvalue":2.0652929558900986e-119,
-            "stat_value":285122.0,
+            "pvalue":1.8902370854787666e-56,
+            "stat_value":444363.0,
             "name":"('Pyr', 'NREM') vs ('Pyr', 'WAKE_HOMECAGE')",
-            "n_total":3552
+            "n_total":3554
         },
         {
             "panel_name":"FR_States",
@@ -82,8 +82,8 @@
                 355,
                 355
             ],
-            "pvalue":4.116571672790151e-34,
-            "stat_value":162.56607488626378,
+            "pvalue":3.925993532315163e-34,
+            "stat_value":162.66204336839655,
             "name":"",
             "n_total":1776
         },
@@ -94,8 +94,8 @@
                 355,
                 355
             ],
-            "pvalue":0.08929352469126871,
-            "stat_value":70158.0,
+            "pvalue":0.1000692234737367,
+            "stat_value":70051.0,
             "name":"L vs M",
             "n_total":710
         },
@@ -106,8 +106,8 @@
                 355,
                 355
             ],
-            "pvalue":0.0004986833362826518,
-            "stat_value":74097.0,
+            "pvalue":0.0006220727665295961,
+            "stat_value":73955.0,
             "name":"M vs H",
             "n_total":710
         },
@@ -118,8 +118,8 @@
                 356,
                 355
             ],
-            "pvalue":0.08350985608921223,
-            "stat_value":70413.0,
+            "pvalue":0.04838777201923679,
+            "stat_value":70906.0,
             "name":"VL vs L",
             "n_total":711
         },
@@ -130,8 +130,8 @@
                 355,
                 355
             ],
-            "pvalue":0.02718451877099079,
-            "stat_value":71205.0,
+            "pvalue":0.04111840875823906,
+            "stat_value":70854.0,
             "name":"H vs VH",
             "n_total":710
         },
@@ -142,8 +142,8 @@
                 356,
                 355
             ],
-            "pvalue":5.735607283539721e-06,
-            "stat_value":76882.0,
+            "pvalue":2.524871961503865e-06,
+            "stat_value":77309.0,
             "name":"VL vs M",
             "n_total":711
         },
@@ -154,8 +154,8 @@
                 355,
                 355
             ],
-            "pvalue":2.0908399003084335e-10,
-            "stat_value":81320.0,
+            "pvalue":6.935437928180588e-10,
+            "stat_value":80835.0,
             "name":"M vs VH",
             "n_total":710
         },
@@ -166,8 +166,8 @@
                 355,
                 355
             ],
-            "pvalue":7.571700390938586e-10,
-            "stat_value":80799.0,
+            "pvalue":4.5045254224954484e-10,
+            "stat_value":81011.0,
             "name":"L vs H",
             "n_total":710
         },
@@ -178,8 +178,8 @@
                 355,
                 355
             ],
-            "pvalue":9.02327260042818e-18,
-            "stat_value":87187.0,
+            "pvalue":3.34491312351787e-17,
+            "stat_value":86784.0,
             "name":"L vs VH",
             "n_total":710
         },
@@ -190,8 +190,8 @@
                 356,
                 355
             ],
-            "pvalue":2.9824961859240293e-16,
-            "stat_value":86322.0,
+            "pvalue":4.224881875904663e-17,
+            "stat_value":86939.0,
             "name":"VL vs H",
             "n_total":711
         },
@@ -202,8 +202,8 @@
                 356,
                 355
             ],
-            "pvalue":6.770193555413582e-24,
-            "stat_value":91406.0,
+            "pvalue":1.0118168539834632e-23,
+            "stat_value":91300.0,
             "name":"VL vs VH",
             "n_total":711
         }

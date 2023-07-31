@@ -382,10 +382,10 @@ def bla_channels(session):
         "right": best_channel(session,bla_shanks(session)["right"]),
     }
 
-def shank_neighbours(shank):
-    df = pd.read_csv(os.path.join(base, 'All-Rats/Shanks_Neighbours.csv'))
-    m_neighbour = df[(df['Rat'] == rat) & (df['Shank'] == shank)]['medial'].values[0]
-    l_neighbour = df[(df['Rat'] == rat) & (df['Shank'] == shank)]['lateral'].values[0]
+def shank_neighbours(metadata,shank):
+    df = pd.read_csv(os.path.join(metadata['dataset_path'], 'All-Rats/Shanks_Neighbours.csv'))
+    m_neighbour = df[(df['Rat'] == metadata['rat']) & (df['Shank'] == shank)]['medial'].values[0]
+    l_neighbour = df[(df['Rat'] == metadata['rat']) & (df['Shank'] == shank)]['lateral'].values[0]
 
     if isfinite(m_neighbour) : m_neighbour = int(m_neighbour)
     if isfinite(l_neighbour) : l_neighbour = int(l_neighbour)
@@ -816,14 +816,14 @@ def lfp(session,
         return nts.TsdFrame(timestep, data[:, channel], time_units="s")
 
 
-def lfp_in_intervals(channel, intervals):
+def lfp_in_intervals(session, channel, intervals):
     t = np.array([])
     lfps = np.array([])
 
     for start, stop in zip(intervals.as_units("s").start, intervals.as_units("s").end):
         start = np.round(start, decimals=1)
         stop = np.round(stop, decimals=1)
-        lfp = bk.load.lfp(channel, start, stop)
+        lfp = bk.load.lfp(session,channel, start, stop)
         if lfp is None: return None
         t = np.append(t, lfp.index)
         lfps = np.append(lfps, lfp.values)
