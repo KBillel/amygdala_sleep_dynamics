@@ -256,9 +256,14 @@ if __name__ == '__main__':
     for a in ax.flatten(): plot.clean_axes(a)
     # plt.tight_layout()
 
-    fig.savefig('output.png')
 
-    # plt.savefig('plots/figures/extended.svg')
+    plot.labels_in_grid(ax.flatten(),numbers = {(0,0):0,
+                                                (0,2):1,
+                                                (1,0):2,
+                                                (1,2):3,
+                                                (2,0):4,
+                                                (2,2):5,},all_ylabels=True)
 
-    
+    plt.savefig('plots/figures/main-extended.png')
+    plt.savefig('plots/figures/main-extended.svg')
     # fig.savefig('plots/figures/delta_quantiles.svg')

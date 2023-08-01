@@ -73,18 +73,18 @@ Figures
    283 NREM-REM transitions ; n = 1777 principal neurons ; n = 260 interneurons). (E) 55.7% of principal and 72.0% of interneurons
    are REM-ON cells (poisson-test against firing during NREM, p < 0.001). (F) Linear regression between increase of firing rates
    during REM sleep and firing rates during WAKE. Principal neurons that fires the most during WAKE tends to increase less during
-   REM sleep (r = −0.20, p = 5.66 × 10−17 ). Interneurons increase does not depends on WAKE firing rates (r = −0.02, p = 0.76)
+   REM sleep (r = −0.20, p = 5.66 × 10−17  ). Interneurons increase does not depends on WAKE firing rates (r = −0.02, p = 0.76)
    (G) Same as (F) but neurons a grouped by quintiles based on average firing rates during WAKE. (Kruskal-Wallis p < 1033 followed
    by Mann-Whitney with Bonferroni correction).
 
 
-   .. figure:: ../../../plots/figures/supp-fr_state.png
+.. figure:: ../../../plots/figures/supp-fr_state.png
       
-      Figure S3. Firing Rates in the BLA at transitions.
+  Figure S3. Firing Rates in the BLA at transitions.
 
 
-      (A) Histogram of firing rates during SLEEP (NREM+REM). Red lines shows quintiles cutoff. (B) Same as Fig. 2D but quintiles
-      are compute on SLEEP firing rates. (C,D) Same as Fig. 2F,G but x-axis is firing rates during SLEEP
+  (A) Histogram of firing rates during SLEEP (NREM+REM). Red lines shows quintiles cutoff. (B) Same as Fig. 2D but quintiles
+  are compute on SLEEP firing rates. (C,D) Same as Fig. 2F,G but x-axis is firing rates during SLEEP
 
 
 
