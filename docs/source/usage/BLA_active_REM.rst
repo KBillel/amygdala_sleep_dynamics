@@ -56,6 +56,39 @@ fr_states.py calls :py:func:`~processing.fr_states.process_all_sessions` with fo
 Once processing done, :py:mod:`~plots.plot_fr` will generates the figure.
 Variable quantile_state, will define if neurons are sorted base on firing rates during WAKE or SLEEP.
 
+Figures
+-------
+
+.. figure:: ../../../plots/figures/main-fr_state.png
+
+   Figure 2. The basolateral-amygdala is highly active during REM sleep.
+
+
+   (A) Boxplot representing the firing rates of each recorded neurons in the BLA (n = 1777 principal neurons and n = 260
+   interneurons). Firing rates are different for each states with higher firing rates during REM for both principal and interneurons.
+   (wilcoxon sign ranked test). (B) Same as (A) but represented as cumulative distributions. Left represent principal neurons and
+   right interneurons. Log-scale is used to represent principal neurons as they span a larger band of firing rates. (C) Histogram of
+   firing rates during WAKE. Red lines shows quintiles cutoff. (D) Zscore firing rates of principal and interneurons at NREM-REM. Top
+   panel shows raw firing rates. Bottom panel shows Zscore firing rates separated in quintiles based on WAKE mean firing rates (n =
+   283 NREM-REM transitions ; n = 1777 principal neurons ; n = 260 interneurons). (E) 55.7% of principal and 72.0% of interneurons
+   are REM-ON cells (poisson-test against firing during NREM, p < 0.001). (F) Linear regression between increase of firing rates
+   during REM sleep and firing rates during WAKE. Principal neurons that fires the most during WAKE tends to increase less during
+   REM sleep (r = −0.20, p = 5.66 × 10−17 ). Interneurons increase does not depends on WAKE firing rates (r = −0.02, p = 0.76)
+   (G) Same as (F) but neurons a grouped by quintiles based on average firing rates during WAKE. (Kruskal-Wallis p < 1033 followed
+   by Mann-Whitney with Bonferroni correction).
+
+
+   .. figure:: ../../../plots/figures/supp-fr_state.png
+      
+      Figure S3. Firing Rates in the BLA at transitions.
+
+
+      (A) Histogram of firing rates during SLEEP (NREM+REM). Red lines shows quintiles cutoff. (B) Same as Fig. 2D but quintiles
+      are compute on SLEEP firing rates. (C,D) Same as Fig. 2F,G but x-axis is firing rates during SLEEP
+
+
+
+
 Panel table
 -----------
 
@@ -104,11 +137,5 @@ Panel table
      - :py:func:`~plots.plot_fr.corr_rem_nrem_fr`
      - df,"BLA","WAKE_HOMECAGE",axes
 
-Figures
--------
 
-.. figure:: ../../../plots/figures/supp-fr.png
 
-Caption
-
-Legend

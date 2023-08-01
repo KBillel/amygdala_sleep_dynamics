@@ -172,10 +172,7 @@ def labels_in_grid(axes: list, first_col=1, numbers: dict = None, all_ylabels=Fa
         numbers = {}
     # Adjust axes labels depending on position
     for ax in axes:
-        s = ax.get_subplotspec()
-        # subplot_pos = s.get_rows_columns()
-        row = s.rowspan.start # subplot_pos[2]
-        col = s.colspan.start # subplot_pos[4]
+    
         if row != max_row - 1:
             # If not last row, do not get a xlabel to save space
             ax.set_xlabel('')

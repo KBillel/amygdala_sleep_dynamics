@@ -266,12 +266,12 @@ if __name__ == '__main__':
     for _,a in ax.items(): plot.clean_axes(a)
 
     plot.labels_in_grid(list(ax.values()),numbers = {(0,0):0,
-                                                (0,2):1,
-                                                (0,6):2,
-                                                (3,0):3,
-                                                (3,2):4,
-                                                (3,3):5,
-                                                (3,6):6},all_ylabels=True)
+                                                     (0,2):1,
+                                                     (0,6):2,
+                                                     (3,0):3,
+                                                     (3,2):4,
+                                                     (3,3):5,
+                                                     (3,6):6},all_ylabels=True)
 
     # plt.tight_layout()
     fig.savefig('plots/figures/main-fr_state.png')
@@ -280,5 +280,37 @@ if __name__ == '__main__':
     stats_boxplot.extend(stats_corr)
     stats_boxplot.save('plots/figures/fr.json')
 
+    quantile_state = 'SLEEP'
+    fig,ax = plt.subplot_mosaic("""AABCC
+                                   AABCC
+                                   AABCC
+                                   DDGGH
+                                   DDGGH
+                                   EEGGH
+                                   EEGGH
+                                   """,
+                                   figsize = (14,8),
+                                   layout='tight')
+    
 
-     ## Stats :
+    plot_histograms_firing_rates(df,'BLA',quantile_state,ax = ax['A'])
+    ax_box,stats_corr = corr_rem_nrem_fr(df,'BLA',quantile_state,(ax['G'],ax['H']))
+
+    plot_transitions_panel(transitions,df,stru,None,None,params,'NREM-REM',ax['D'])
+    plot_transitions_panel(transitions,df,stru,'zscore',quantile_state,params,'NREM-REM',ax['E'])
+    
+    for _,a in ax.items(): plot.clean_axes(a)
+
+    plot.labels_in_grid(list(ax.values()),numbers = {(0,0):0,
+                                                     (3,0):1,
+                                                     (3,2):2,
+                                                     (3,4):3,},all_ylabels=True)
+
+    fig.delaxes(ax['B'])
+    fig.delaxes(ax['C'])
+    # plt.tight_layout()
+    fig.savefig('plots/figures/supp-fr_state.png')
+    fig.savefig('plots/figures/supp-fr_state.svg')
+    
+    
+         ## Stats :

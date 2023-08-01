@@ -56,9 +56,10 @@ Variable quantile_state, will define if neurons are sorted base on firing rates 
 Figures
 --------
 .. figure:: ../../../plots/figures/main_firing_epochs.png
-    :target: :py:func:`~plots.plot_transitions.fig3_firing_rates_epochs`
-
+    
     Figure 3. Neurons decrease firing rates during NREM and increase firing rates during WAKE
+
+    
     (A) Average firing rates of neurons during NREM sleep, REM sleep, and wake epochs. (B) Firing rates of principal neurons
     (green) categorized into quintiles based on their average firing rates during wake epochs. (C) Same as (B), but firing rates are
     z-scored. Interneurons are represented in black. Shaded Area represent 95% CI. (n = 514 wake epochs ; n = 688 NREM epochs
@@ -69,12 +70,16 @@ Figures
 .. figure:: ../../../plots/figures/supp_firing_transitions.png
     
     Figure S2. Firing Rates in the BLA at transitions
+
+
     (A) Raw firing rates at WAKE-NREM / REM-NREM and REM-WAKE transitions. Panel show raw firing rates averaged by quintiles.
     (B) same as (A) but the firing rates of neurons are zscored.
 
 .. figure:: ../../../plots/figures/supp_transitions_network_metrics.png
     
     Figure S6. Network metrics at different transitions
+
+
     (A) Measure of network metrics at WAKE-NREM / NREM-REM / REM-NREM and REM-WAKE transitions
 
 Panel table
