@@ -265,7 +265,7 @@ if __name__ == '__main__':
     
     for _,a in ax.items(): plot.clean_axes(a)
     # plt.tight_layout()
-    fig.savefig('output1.png')
+    fig.savefig('plots/figures/supp-fr.png')
     fig.savefig('plots/figures/supp-fr.svg')
 
     stats_boxplot.extend(stats_corr)

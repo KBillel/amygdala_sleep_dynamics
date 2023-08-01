@@ -103,3 +103,12 @@ Panel table
      - G
      - :py:func:`~plots.plot_fr.corr_rem_nrem_fr`
      - df,"BLA","WAKE_HOMECAGE",axes
+
+Figures
+-------
+
+.. figure:: ../../../plots/figures/supp-fr.png
+
+Caption
+
+Legend

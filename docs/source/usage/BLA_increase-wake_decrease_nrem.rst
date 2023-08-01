@@ -56,7 +56,8 @@ Variable quantile_state, will define if neurons are sorted base on firing rates 
 Figures
 --------
 .. figure:: ../../../plots/figures/main_firing_epochs.png
-    
+    :target: :py:func:`~plots.plot_transitions.fig3_firing_rates_epochs`
+
     Figure 3. Neurons decrease firing rates during NREM and increase firing rates during WAKE
     (A) Average firing rates of neurons during NREM sleep, REM sleep, and wake epochs. (B) Firing rates of principal neurons
     (green) categorized into quintiles based on their average firing rates during wake epochs. (C) Same as (B), but firing rates are
