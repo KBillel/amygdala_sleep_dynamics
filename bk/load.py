@@ -562,8 +562,8 @@ def loadSpikeData(path, index=None, fs=20000):
     Modification are explicit with comment
     if the path contains a folder named /Analysis, 
     the script will look into it to load either
-        - SpikeData.mat saved from matlab
-        - SpikeData.h5 saved from this same script
+    * SpikeData.mat saved from matlab
+    * SpikeData.h5 saved from this same script
     if not, the res and clu file will be loaded 
     and an /Analysis folder will be created to save the data
     Thus, the next loading of spike times will be faster
@@ -890,43 +890,6 @@ def freezing_intervals():
     else:
         print("Could not find freezing_intervals.npy")
         return False
-
-
-def DLC_pos(filtered=True, force_reload=False, save=False):
-    """
-    Load position from DLC files (*.h5) and returns it as a nts.TsdFrame
-    """
-    files = os.listdir()
-    if ("positions.h5" in files) and (force_reload == False):
-        print("hey listen")
-        data = pd.read_hdf("positions.h5")
-        pos = nts.TsdFrame(data)
-        return pos
-
-    for f in files:
-        if filtered and f.endswith("filtered.h5"):
-            filename = f
-            break
-        if not filtered and not f.endswith("filtered.h5") and f.endswith(".h5"):
-            print(f)
-            filename = f
-            break
-    data = pd.read_hdf(filename)
-    data = data[data.keys()[0][0]]
-
-    TTL = digitalin("digitalin.dat")[0, :]
-    tf = bk.compute.TTL_to_times(TTL)
-
-    if len(tf) > len(data):
-        tf = np.delete(tf, -1)
-
-    data.index = tf * 1_000_000
-
-    if save:
-        data.to_hdf("positions.h5", "pos")
-
-    pos = nts.TsdFrame(data)
-    return pos
 
 def video_path(local_path):
     ls = os.listdir(local_path)

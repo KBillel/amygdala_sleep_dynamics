@@ -80,7 +80,7 @@ def compute_corr(activity):
     x = range(activity.shape[1])
     y = np.nanmean(activity,0)
     reg = linregress(x,y)
-    p = reg.pvalue*8
+    p = reg.pvalue
     if p >= 1: p = 1
     return reg.rvalue, p
 
@@ -197,7 +197,7 @@ def plot_network_metrics(values,norm = True,col = 'b',ax = None):
     x = range(values.shape[1])
     plot.confidence_intervals(x,values,style = col,ax = ax)
     r,p = compute_corr(values)
-    return r,p*9
+    return r,p
     
 
 
@@ -258,10 +258,6 @@ def make_figure_transition(transitions,
     else:
         plot_all_transitions(transitions, df_firing_rates,stru,quantile_state, params, transitions_of_interest, ax,plot_zscore)
 
-    
-    ax[0,0].set_ylim(-1,1)
-    ax[-1,0].set_ylim(-1,1)
-
     return fig,ax
 
 
@@ -271,7 +267,7 @@ def fig3_firing_rates_epochs(transitions, network_metrics_transitions, df_firing
                                'NREM':[0,30],
                                'REM':[0,12]}
     
-    fig,ax = plt.subplots(3,3,figsize = (16,8),sharey = 'row')
+    fig,ax = plt.subplots(3,3,figsize = (16,8),sharey = 'row',sharex='col')
     make_figure_transition(transitions,
                            network_metrics_transitions,
                            df_firing_rates,
@@ -285,24 +281,31 @@ def fig3_firing_rates_epochs(transitions, network_metrics_transitions, df_firing
               Patch(facecolor=colors['NREM'],edgecolor='none',label = 'NREM'),
               Patch(facecolor=colors['REM'],edgecolor='none',label = 'REM')]
     
-    l_Line2D = [Line2D((),(),2,color=colors['BLA'][q],label = full_name_quantiles[q]) for q in colors['BLA'] if q != 'BLA']
+    l_Line2D = [Line2D((),(),linewidth=2,color='k',label = 'Interneurons')]
+    l_Line2D.extend([Line2D((),(),linewidth=2,color=colors['BLA'][q],label = full_name_quantiles[q]) for q in colors['BLA'] if q != 'BLA'])
 
 
+    plot.labels_in_grid(ax.flatten(),numbers = {(0,0):0,
+                                                (1,0):1,
+                                                (2,0):2},all_ylabels=True)
     fig.tight_layout(rect=(0,0,0.85,1))
     ax[0,-1].legend(handles = l_Path,bbox_to_anchor = (1,1))
     ax[1,-1].legend(handles = l_Line2D,bbox_to_anchor = (1,1))
 
+    ax[0,0].set_ylim(-1,1)
+    ax[2,0].set_ylim(-1,1)
 
-    fig.savefig(f'plots/figures/test.svg')
-    fig.savefig('output.png')
 
+    fig.savefig(f'plots/figures/main_firing_epochs.svg')
+    fig.savefig(f'plots/figures/main_firing_epochs.png')
+    return fig,ax
 def figs2_firing_rates_transitions(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state):
     transitions_of_interest = {
                                'WAKE_HOMECAGE-NREM':[20,30],
                                'REM-NREM':[8,12],
                                'REM-WAKE_HOMECAGE':[8,12]}
     
-    fig,ax = plt.subplots(2,3,figsize = (12,5))
+    fig,ax = plt.subplots(2,3,figsize = (16,5),sharex='col',sharey='row')
     make_figure_transition(transitions,
                            network_metrics_transitions,
                            df_firing_rates,
@@ -313,9 +316,25 @@ def figs2_firing_rates_transitions(transitions, network_metrics_transitions, df_
                            ax = ax,
                            plot_zscore=False)
     
-    fig.tight_layout()
-    fig.savefig(f'plots/figures/test.svg')
-    fig.savefig('output.png')
+
+    l_Path = [Patch(facecolor=colors['WAKE_HOMECAGE'],edgecolor='none',label = 'WAKE_HOMECAGE'),
+              Patch(facecolor=colors['NREM'],edgecolor='none',label = 'NREM'),
+              Patch(facecolor=colors['REM'],edgecolor='none',label = 'REM')]
+    
+    l_Line2D = [Line2D((),(),linewidth=2,color='k',label = 'Interneurons')]
+    l_Line2D.extend([Line2D((),(),linewidth=2,color=colors['BLA'][q],label = full_name_quantiles[q]) for q in colors['BLA'] if q != 'BLA'])
+    ax[0,0].set_ylim(0.01,50)
+    ax[1,0].set_ylim(-1.5,1.5)
+
+    plot.labels_in_grid(ax.flatten(),numbers = {(0,0):0,
+                                                (1,0):1},all_ylabels=True)
+
+    fig.tight_layout(rect=(0,0,0.85,1))
+    ax[0,-1].legend(handles = l_Path,bbox_to_anchor = (1,1))
+    ax[1,-1].legend(handles = l_Line2D,bbox_to_anchor = (1,1))
+
+    fig.savefig(f'plots/figures/supp_firing_transitions.svg')
+    fig.savefig(f'plots/figures/supp_firing_transitions.png')
 
 
 def figs6_network_metrics_transitions(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state):
@@ -325,7 +344,7 @@ def figs6_network_metrics_transitions(transitions, network_metrics_transitions, 
                                'REM-NREM':[8,12],
                                'REM-WAKE_HOMECAGE':[8,12]}
     
-    fig,ax = plt.subplots(1,4,figsize = (12,3),squeeze=False,sharey = True)
+    fig,ax = plt.subplots(1,4,figsize = (16,2.71),squeeze=False,sharey = 'row',sharex='col')
     make_figure_transition(transitions,
                            network_metrics_transitions,
                            df_firing_rates,
@@ -339,11 +358,24 @@ def figs6_network_metrics_transitions(transitions, network_metrics_transitions, 
     ax[0,0].set_ylim(-2,2)
     ax[0,0].set_ylabel('Network Metrics\n(zscore)')
 
+
+    l_Path = [Patch(facecolor=colors['WAKE_HOMECAGE'],edgecolor='none',label = 'WAKE_HOMECAGE'),
+              Patch(facecolor=colors['NREM'],edgecolor='none',label = 'NREM'),
+              Patch(facecolor=colors['REM'],edgecolor='none',label = 'REM')]
+    
+    l_Line2D = [Line2D((),(),linewidth=2,color=colors['EIB'],label = 'EIB'),
+                Line2D((),(),linewidth=2,color=colors['CV'],label = 'CV'),
+                Line2D((),(),linewidth=2,color=colors['sync'],label = 'Sync')]
+
+
+
+    plot.labels_in_grid(ax.flatten(),numbers = {(0,0):0},all_ylabels=True)
+    fig.tight_layout(rect=(0,0,0.85,1))
+    ax[0,-1].legend(handles = l_Path+l_Line2D,bbox_to_anchor = (1,1))
     
 
-    fig.tight_layout()
-    fig.savefig(f'plots/figures/test.svg')
-    fig.savefig('output.png')
+    fig.savefig(f'plots/figures/supp_transitions_network_metrics.svg')
+    fig.savefig(f'plots/figures/supp_transitions_network_metrics.png')
 
 
                            
@@ -368,9 +400,9 @@ if __name__ == '__main__':
 
 
 
-    fig3_firing_rates_epochs(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state)
-    # figs2_firing_rates_transitions(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state)
-    # figs6_network_metrics_transitions(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state)
+    fig,ax = fig3_firing_rates_epochs(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state)
+    figs2_firing_rates_transitions(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state)
+    figs6_network_metrics_transitions(transitions, network_metrics_transitions, df_firing_rates, params, quantile_state)
 
     # fig,ax = plt.subplots(1,3,figsize = (12,4),sharey = True)
     # plot_histogram_fr(df_firing_rates,stru,params,ax)

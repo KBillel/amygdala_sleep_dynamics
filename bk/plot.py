@@ -5,6 +5,7 @@ import scipy.stats
 import bk.compute
 import neuroseries as nts
 
+import string
 
 def rasterPlot(neurons,window = None,col = 'black',width= 0.5,height = 1,offsets = 1, ax=None):
     if ax is None:
@@ -136,3 +137,53 @@ def set_share_axes(axs, target=None, sharex=False, sharey=False):
         for ax in axs[:,1:].flat:
             ax.yaxis.set_tick_params(which='both', labelleft=False, labelright=False)
             ax.yaxis.offsetText.set_visible(False)
+
+
+
+def number_ax(ax, letter=None, number=0):
+    if letter is None:
+        letter = string.ascii_uppercase[number]
+    ax.text(-0.1, 1.05, letter, transform=ax.transAxes,
+            size=20, weight='bold',va = 'bottom')
+
+
+def labels_in_grid(axes: list, first_col=1, numbers: dict = None, all_ylabels=False):
+    """
+    Author: Rémi Proville
+    Remove some labels on axes which are part of a grid of subplots so that y-labels are only
+    present in the first column, and xlabels on the bottom row
+
+    Parameters
+    ----------
+    axes: list
+    List of axes to consider
+    first_col: int
+    Which column should be the one with ylabels
+    numbers: dict
+    Format: {(row, col): panel number}
+    Used for numbering the subplots
+    all_ylabels: boolean
+    Should all y_labels be set or the redundant should be removed.
+    Default to False: redundant ylabels are removed
+    """
+    # Total number of rows
+    max_row = axes[0].get_subplotspec().get_geometry()[0]
+    if numbers is None:
+        numbers = {}
+    # Adjust axes labels depending on position
+    for ax in axes:
+        s = ax.get_subplotspec()
+        # subplot_pos = s.get_rows_columns()
+        row = s.rowspan.start # subplot_pos[2]
+        col = s.colspan.start # subplot_pos[4]
+        if row != max_row - 1:
+            # If not last row, do not get a xlabel to save space
+            ax.set_xlabel('')
+        if col != first_col and not all_ylabels:
+            # If not first column (actually second because of task legend) don't get a ylabel
+            ax.yaxis.label.set_visible(False) # set_ylabel('')
+        elif col != first_col and all_ylabels:
+            ax.yaxis.set_ticks_position('left')
+            c_num = numbers.get((row, col))
+            if c_num is not None:
+                number_ax(ax, number=c_num)
