@@ -264,9 +264,18 @@ if __name__ == '__main__':
     plot_transitions_panel(transitions,df,stru,'zscore',quantile_state,params,'NREM-REM',ax['E'])
     
     for _,a in ax.items(): plot.clean_axes(a)
+
+    plot.labels_in_grid(list(ax.values()),numbers = {(0,0):0,
+                                                (0,2):1,
+                                                (0,6):2,
+                                                (3,0):3,
+                                                (3,2):4,
+                                                (3,3):5,
+                                                (3,6):6},all_ylabels=True)
+
     # plt.tight_layout()
-    fig.savefig('plots/figures/supp-fr.png')
-    fig.savefig('plots/figures/supp-fr.svg')
+    fig.savefig('plots/figures/main-fr_state.png')
+    fig.savefig('plots/figures/main-fr_state.svg')
 
     stats_boxplot.extend(stats_corr)
     stats_boxplot.save('plots/figures/fr.json')

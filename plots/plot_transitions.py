@@ -85,7 +85,7 @@ def compute_corr(activity):
     return reg.rvalue, p
 
 
-def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None,norm = None,ax = None):
+def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None,norm = None,ax = None,labels = False):
 
     colors_stru = colors[stru]
 
@@ -113,7 +113,7 @@ def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None
             # ax.plot(y_,c = colors_stru[q])
             plot.confidence_intervals(range(activity_pyr[mask_q].shape[1]),activity_pyr[mask_q],style = colors_plt[i],ax = ax,alpha = 0.2)
             r,p = compute_corr(activity_pyr[mask_q])
-            ax.text(0.25,0.5+0.1*i,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = colors_plt[i])
+            if labels: ax.text(0.25,0.5+0.1*i,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = colors_plt[i])
             print(r,p)
             max_average.append(np.max(np.nanmean(activity_pyr[mask_q],0)))
             min_average.append(np.min(np.nanmean(activity_pyr[mask_q],0)))
@@ -123,7 +123,7 @@ def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None
         plot.confidence_intervals(range(activity_pyr.shape[1]),activity_pyr,style = colors_stru[stru],ax = ax,alpha = 0.2)
         # plot.confidence_intervals(range(activity_pyr.shape[1]),activity_pyr[metadata_pyr['REM_label'] == 'REM_OFF'],style = 'r',ax = ax,alpha = 0.2)
         r,p = compute_corr(activity_pyr)
-        ax.text(0.25,0.9,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = colors_stru[stru])
+        if labels:ax.text(0.25,0.9,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = colors_stru[stru])
         # r,p = compute_corr(activity_pyr[metadata_pyr['REM_label'] == 'REM_OFF'])
         # ax.text(0.25,0.8,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = 'r')
 
@@ -133,7 +133,7 @@ def plot_activity_at_transitions(activity, metadata,stru,bin_state,quantile=None
     ax.plot(np.nanmean(activity_int,0),'k--')
     plot.confidence_intervals(range(activity_int.shape[1]),activity_int,style = 'k',ax = ax,alpha = 0.2)
     r,p = compute_corr(activity_int)
-    ax.text(0.25,1,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = 'k')
+    if labels:ax.text(0.25,1,f'r = {r:.2g} p = {p:.2g}',transform = ax.transAxes, color = 'k')
     max_average.append(np.max(np.nanmean(activity_int,0)))
     min_average.append(np.min(np.nanmean(activity_int,0)))
 
