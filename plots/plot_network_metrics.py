@@ -10,7 +10,8 @@ import seaborn as sns
 from statannotations.Annotator import Annotator
 from itertools import combinations
 from scipy.stats import kruskal,zscore
-
+from plots.plot_transitions import plot_all_network_metrics
+import json
 def load_data(path):
     return io.load_shelve(path)
 
@@ -37,7 +38,7 @@ def plot_examples(data,start,stop,ax):
     for state in ['NREM','REM','WAKE_HOMECAGE']:
         plot.intervals(states[state],col = colors[state],ax= ax)
 
-    ax.plot(t_fr,pyr_fr,colors['BLA']['BLA'])
+    ax.plot(t_fr,pyr_fr,c = colors['BLA']['H'])
     ax.plot(t_fr,int_fr-5,'k--')
     ax.plot(t_eib,eib-10,colors['EIB'])
     ax.plot(t_cv,cv-15,colors['CV'])
@@ -73,6 +74,8 @@ def plot_epochs(data,ax = None):
                                'y':metric_name,
                                'ax':ax[i],
                                'palette':colors}
+            
+            
             states = ['REM','NREM','WAKE_HOMECAGE']
             pairs = list(combinations(states,2))
             sns.boxenplot(**plotting_params)
@@ -97,12 +100,13 @@ def plot_epochs(data,ax = None):
                     [('WAKE_HOMECAGE', 'First'), ('WAKE_HOMECAGE', 'Last')],
                     [('WAKE_HOMECAGE', 'Middle'), ('WAKE_HOMECAGE', 'Last')]
                     ]
-            
+            print(i)
             plotting_params = {'data':df,
                                 'x':'state',
                                 'y':metric_name,
                                 'ax':ax[i],
-                                'hue':'times'}
+                                'hue':'times',
+                                'color':'g'}
             print(f'Metric Name:{metric_name}')
             sns.boxenplot(**plotting_params)
             annotator = Annotator(pairs = pairs,**plotting_params)
@@ -123,36 +127,81 @@ def metric_epoch_to_df(metric_name, all_states):
     
     return df
 
+def fig5_network_metrics(data):
+    fig,ax = plt.subplot_mosaic('''AAA
+                                   BCD''',figsize = (12,8))
+    plot_examples(data['unique_sessions'][example_session],0,20000,ax['A'])
+    plot_epochs(data['merged_sessions']['epochs'],(ax['B'],ax['C'],ax['D']))
+
+    # plot_epochs(data['merged_sessions']['thirds'],(ax['B'],ax['C'],ax['D']))
+    # plot_nbins(data['merged_sessions']['nbins'],ax[:,2:])
+    for a in ax.values(): plot.clean_axes(a)
+    ax['A'].set_xlim(12500,12500+3600*2)
+    ax['A'].set_xticks(np.arange(12500,12500+3600*2,1000),np.arange(0,7200,1000))
+    # ax['B'].set_ylim(-3,5)
+    # ax['C'].set_ylim(0,6)
+    # ax['D'].set_ylim(-0.02,0.08)
+    plot.labels_in_grid(list(ax.values()),numbers={
+                                                   (0,0):0,
+                                                   (1,0):1,
+                                                   (1,1):2,
+                                                   (1,2):3},all_ylabels=True)
+    fig.tight_layout()
+    fig.savefig('plots/figures/main-network_metrics_states.png')
+    fig.savefig('plots/figures/main-network_metrics_states.svg')
+    return fig,ax
+
+
+def fig6_network_metrics(data,params):
+    transitions_of_interest = {'NREM':[0,30],
+                           'REM':[0,12],
+                           'WAKE_HOMECAGE':[0,30]}
+    
+    # fig,ax = plt.subplot_mosaic('''AAA
+    
+    #                                BCD''',figsize = (12,8))
+    fig,ax = plt.subplots(2,3,figsize = (12,8))
+    # plot_nbins(data['merged_sessions']['nbins'])
+    
+    
+    plot_all_network_metrics(data['merged_sessions']['at_transitions'],transitions_of_interest,params,ax[0,:])
+    for _,d in data['merged_sessions'].items():
+        for m in metrics_to_pop: d.pop(m)
+    
+    plot_epochs(data['merged_sessions']['thirds'],(ax[1,0],ax[1,1],ax[1,2]))
+    for a in ax.flatten(): plot.clean_axes(a)
+    # ax['B'].set_ylim(-3,5)
+    # ax['C'].set_ylim(0,6)
+    # ax['D'].set_ylim(-0.02,0.08)
+    plot.labels_in_grid(ax.flatten(),numbers={
+                                                   (0,0):0,
+                                                   (1,0):1,
+                                                   (1,1):2,
+                                                   (1,2):3},all_ylabels=True)
+    
+    for i,title in enumerate(transitions_of_interest.keys()):
+        ax[0,i].set_title(title)
+    for a in ax[0,:]: a.set_ylim(-1,1)
+    
+    fig.tight_layout()
+    fig.savefig('plots/figures/main-network_metrics_bins.png')
+    fig.savefig('plots/figures/main-network_metrics_bins.svg')
+    return fig,ax
 if __name__ == '__main__':
 
     example_session = 'Rat09-20140401'
     plt.ion()
     data = load_data('processed_data/network_metrics')
+    with open('processed_data/transitions.json','r') as jf:
+        params = json.load(jf)
     metrics_to_pop = ['eib']
-
     for _,d in data['merged_sessions'].items():
         for m in metrics_to_pop: d.pop(m)
 
-    # gridspec_kw={'width_ratios':[3,6,2,2,2]}
-    # fig,ax = plt.subplots(2,3,sharex='col',figsize = (12,8),squeeze=False)
-    
+    fig,ax = fig5_network_metrics(data)
+    # 
+    data = load_data('processed_data/network_metrics')
+    fig6_network_metrics(data,params)
+    # print(ax.values())
 
-    # for i in range(len(ax)):
-    #     ax[i,2].sharey(ax[i,3])
-    #     ax[i,3].sharey(ax[i,4])
-    fig,ax = plt.subplot_mosaic('''
-                        AAA
-                        BCD''',figsize = (12,8))
-    plot_examples(data['unique_sessions'][example_session],0,20000,ax['A'])
-    # plot_epochs(data['merged_sessions']['epochs'],(ax['B'],ax['C'],ax['D']))
-    plot_epochs(data['merged_sessions']['thirds'],(ax['B'],ax['C'],ax['D']))
-    # plot_nbins(data['merged_sessions']['nbins'],ax[:,2:])
-    for a in ax.values(): plot.clean_axes(a)
-    ax['A'].set_xlim(12500,12500+3600*2)
-    # ax['B'].set_ylim(-3,5)
-    # ax['C'].set_ylim(0,6)
-    # ax['D'].set_ylim(-0.02,0.08)
-    fig.tight_layout()
-    plt.show()
-    fig.savefig(f'output.png')
-    # fig.savefig('plots/figures/network_metrics3.svg')
+

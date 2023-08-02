@@ -117,6 +117,17 @@ def clean_axes(ax):
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
 
+def full_clean_ax(ax):
+    # Hide the spines
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.xaxis.set_ticks_position('none')
+    ax.yaxis.set_ticks_position('none')
+    ax.yaxis.set_ticklabels([])
+    ax.xaxis.set_ticklabels([])
+
 
 def set_share_axes(axs, target=None, sharex=False, sharey=False):
     if target is None:
@@ -140,10 +151,10 @@ def set_share_axes(axs, target=None, sharex=False, sharey=False):
 
 
 
-def number_ax(ax, letter=None, number=0):
+def number_ax(ax, letter=None, number=0,x_factor= 1,y_factor = 1):
     if letter is None:
         letter = string.ascii_uppercase[number]
-    ax.text(-0.1, 1.05, letter, transform=ax.transAxes,
+    ax.text(-0.1*x_factor, 1.05*y_factor, letter, transform=ax.transAxes,
             size=20, weight='bold',va = 'bottom')
 
 
@@ -176,14 +187,12 @@ def labels_in_grid(axes: list, first_col=1, numbers: dict = None, all_ylabels=Fa
         # subplot_pos = s.get_rows_columns()
         row = s.rowspan.start # subplot_pos[2]
         col = s.colspan.start # subplot_pos[4]
-        if row != max_row - 1:
-            # If not last row, do not get a xlabel to save space
-            ax.set_xlabel('')
-        if col != first_col and not all_ylabels:
-            # If not first column (actually second because of task legend) don't get a ylabel
-            ax.yaxis.label.set_visible(False) # set_ylabel('')
-        elif col != first_col and all_ylabels:
-            ax.yaxis.set_ticks_position('left')
-            c_num = numbers.get((row, col))
-            if c_num is not None:
-                number_ax(ax, number=c_num)
+        col_span = s.colspan.stop - s.colspan.start
+        row_span = s.rowspan.stop - s.rowspan.start
+
+        ax.yaxis.set_ticks_position('left')
+        c_num = numbers.get((row, col))
+        if c_num is not None:
+            x_factor = 1/col_span
+            y_factor = 1/row_span
+            number_ax(ax, number=c_num,x_factor = x_factor,y_factor = y_factor)

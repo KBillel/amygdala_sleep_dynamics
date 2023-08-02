@@ -1,27 +1,27 @@
-Generating figure 2: BLA is highly active during REM sleep
+Generating figure |fignum|: BLA is highly active during REM sleep
 ==========================================================
 
 
 Overview
 --------
 
-To generate figure 2 one needs to:
+To generate figure |fignum| one needs to:
 
-1. Execute processing/fr_states.py : 
-
-.. code-block:: bash
-   :linenos:
-
-   python processing/fr_states.py
-
-This will load, session by session, the data set and compute firing rates of all the neurons with various conditions.
-
-2. Execute plots/plot_fr.py
+1. Execute processing/network_metrics.py : 
 
 .. code-block:: bash
    :linenos:
 
-   python plots/plot_fr.py
+   python processing/network_metrics.py
+
+This will load, session by session, the data set and compute EIB CV and Sync for the whole session.
+
+1. Execute plots/plot_network_metrics.py
+
+.. code-block:: bash
+   :linenos:
+
+   python plots/plot_network_metrics.py
 
 This will generate an svg in files in plots/figures. 
 
@@ -29,39 +29,30 @@ This will generate an svg in files in plots/figures.
 Details
 --------
 
-fr_states.py calls :py:func:`~processing.fr_states.process_all_sessions` with following parameters :
+network_metrics.py calls :py:func:`~processing.network_metrics.process_all_sessions` with following parameters :
 
 * base_folder : Folder of the dataset.
-* params : a dict that contains parameter specific to extended wake and extended sleep. 
-   * State : compute extended period of 'wake' or 'sleep'
-   * sleep_th : minimal or maximum amount of time in sleep (minutes)
-   * wake_th : minimal or maximal amount of time in wake (minutes)
-   * sub_states : Compute the firing rates for separate substates (NREM/REM for instance)
 * save : a boolean in order to save every session to a shelve.
+* force : a boolean in order to force recomputations.
 
 
 
-:py:func:`~processing.fr_states.process_all_sessions` calls :py:func:`~processing.fr_states.process_session`.
+:py:func:`~processing.network_metrics.process_all_sessions` calls :py:func:`~processing.network_metrics.process_session`.
 
-:py:func:`~processing.fr_states.process_session` proced to save each session :
+:py:func:`~processing.network_metrics.process_session` proced to save each session :
 
-* In a shelves located at processed_data/binned_fr_extended with a json files with the parameters
-* In CSV files :
-   * delta_extended.csv/json 
-   * rem_on.csv/json
-   * states_fr.csv/json
+In a shelves located at processed_data/binned_fr_extended with a json files with the parameters
  
 :py:func:`~processing.fr_states.process_all_sessions` will also save merged processed data after running :py:func:`~processing.fr_states.merge_extended`
 
-Once processing done, :py:mod:`~plots.plot_fr` will generates the figure.
-Variable quantile_state, will define if neurons are sorted base on firing rates during WAKE or SLEEP.
+Once processing done, :py:mod:`~plots.plot_network_metrics` will generates the figure.
 
 Figures
 -------
 
-.. figure:: ../../../plots/figures/main-fr_state.png
+.. figure:: ../../../plots/figures/main-network_metrics_states.png
 
-   Figure 2. The basolateral-amygdala is highly active during REM sleep.
+   Figure |fignum|. The basolateral-amygdala is highly active during REM sleep.
 
 
    (A) Boxplot representing the firing rates of each recorded neurons in the BLA (n = 1777 principal neurons and n = 260
@@ -74,17 +65,9 @@ Figures
    are REM-ON cells (poisson-test against firing during NREM, p < 0.001). (F) Linear regression between increase of firing rates
    during REM sleep and firing rates during WAKE. Principal neurons that fires the most during WAKE tends to increase less during
    REM sleep (r = −0.20, p = 5.66 × 10−17  ). Interneurons increase does not depends on WAKE firing rates (r = −0.02, p = 0.76)
-   (G) Same as (F) but neurons a grouped by quintiles based on average firing rates during WAKE. (Kruskal-Wallis p < 1033 followed
+   (G) Same as (F) but neurons a grouped by quintiles based on average firing rates during WAKE. (Kruskal-Wallis p < 10-33 followed
    by Mann-Whitney with Bonferroni correction).
 
-
-.. figure:: ../../../plots/figures/supp-fr_state.png
-      
-  Figure S3. Firing Rates in the BLA at transitions.
-
-
-  (A) Histogram of firing rates during SLEEP (NREM+REM). Red lines shows quintiles cutoff. (B) Same as Fig. 2D but quintiles
-  are compute on SLEEP firing rates. (C,D) Same as Fig. 2F,G but x-axis is firing rates during SLEEP
 
 
 
@@ -100,42 +83,44 @@ Panel table
      - panel
      - function
      - parameters
-   * - 2
+   * - |fignum|
      - A
      - :py:func:`~plots.plot_fr.boxenplot_firing_rates`
      - df,"BLA",axes
-   * - 2
+   * - |fignum|
      - B
      - :py:func:`~plots.plot_fr.cumsum_curves_firing_rates`
      - df,"BLA",['NREM','REM','WAKE_HOMECAGE'],axes
-   * - 2
+   * - |fignum|
      - B
      - :py:func:`~plots.plot_fr.cumsum_curves_firing_rates`
      - df,"BLA",['NREM','REM','WAKE_HOMECAGE'],axes
-   * - 2
+   * - |fignum|
      - C
      - :py:func:`~plots.plot_fr.plot_histograms_firing_rates`
      - df,"BLA",quantile_state,axes
-   * - 2
+   * - |fignum|
      - D-top
      - :py:func:`~plots.plot_fr.plot_transitions_panel`
      - transitions,df,stru,None,None,params,NREM-REM,axes
-   * - 2
+   * - |fignum|
      - D-bot
      - :py:func:`~plots.plot_fr.plot_transitions_panel`
      - transitions,df,stru,zscore,quantile_state,params,NREM-REM,axes
-   * - 2
+   * - |fignum|
      - E
      - :py:func:`~plots.plot_fr.proportion_rem_on`
      - rem_on_off,"BLA",axes
-   * - 2
+   * - |fignum|
      - F
      - :py:func:`~plots.plot_fr.corr_rem_nrem_fr`
      - df,"BLA","WAKE_HOMECAGE",axes
-   * - 2
+   * - |fignum|
      - G
      - :py:func:`~plots.plot_fr.corr_rem_nrem_fr`
      - df,"BLA","WAKE_HOMECAGE",axes
 
 
 
+
+.. |fignum| replace:: 5

@@ -45,7 +45,7 @@ fr_states.py calls :py:func:`~processing.fr_states.process_all_sessions` with fo
 
 :py:func:`~processing.fr_states.process_session` proced to save each session :
 
-* In a shelves located at processed_data/binned_fr_extended with a json files with the parameters
+* In a shelves located at processed_data/network_metrics with a json files with the parameters
 * In CSV files :
    * delta_extended.csv/json 
    * rem_on.csv/json
@@ -57,7 +57,7 @@ Once processing done, :py:mod:`~plots.plot_delta_fr` will generates the figure.
 
 Panel table
 -----------
-
+#FIXME TABLE
 
 .. list-table::
    :header-rows: 1
@@ -68,41 +68,40 @@ Panel table
      - parameters
    * - |fignum|
      - A
-     - :py:func:`~plots.plot_fr.boxenplot_firing_rates`
-     - df,"BLA",axes
+     - :py:func:`~plots.plot_delta_fr.plot_fr_across_extended`
+     - extended['merged_sessions'],stru,'Pyr',ax[:3,:2]
    * - |fignum|
-     - B
-     - :py:func:`~plots.plot_fr.cumsum_curves_firing_rates`
-     - df,"BLA",['NREM','REM','WAKE_HOMECAGE'],axes
+     - B-Left
+     - :py:func:`~plots.plot_fr.plot_corr_fr_delta`
+     - df_firing_rates,df_delta_es,stru,ax[:,2]
    * - |fignum|
-     - B
-     - :py:func:`~plots.plot_fr.cumsum_curves_firing_rates`
-     - df,"BLA",['NREM','REM','WAKE_HOMECAGE'],axes
+     - B-Right
+     - :py:func:`~plots.plot_fr.plot_boxplot_delta_quintiles`
+     - df,'delta_WAKE_HOMECAGE','BLA',ax = ax[0,3]
    * - |fignum|
      - C
-     - :py:func:`~plots.plot_fr.plot_histograms_firing_rates`
-     - df,"BLA",quantile_state,axes
+     - :py:func:`~plots.plot_fr.plot_fr_across_extended`
+     - extended['merged_sessions'],stru,'Pyr',ax[:3,:2]
    * - |fignum|
-     - D-top
-     - :py:func:`~plots.plot_fr.plot_transitions_panel`
-     - transitions,df,stru,None,None,params,NREM-REM,axes
+     - D-Left
+     - :py:func:`~plots.plot_fr.plot_corr_fr_delta`
+     - df_firing_rates,df_delta_es,stru,ax[:,2]
    * - |fignum|
-     - D-bot
-     - :py:func:`~plots.plot_fr.plot_transitions_panel`
-     - transitions,df,stru,zscore,quantile_state,params,NREM-REM,axes
+     - D-Right
+     - :py:func:`~plots.plot_fr.plot_boxplot_delta_quintiles`
+     - df,'delta_NREM','BLA',ax = ax[1,3]
    * - |fignum|
      - E
-     - :py:func:`~plots.plot_fr.proportion_rem_on`
-     - rem_on_off,"BLA",axes
+     - :py:func:`~plots.plot_fr.plot_fr_across_extended`
+     - extended['merged_sessions'],stru,'Pyr',ax[:3,:2]
    * - |fignum|
-     - F
-     - :py:func:`~plots.plot_fr.corr_rem_nrem_fr`
-     - df,"BLA","WAKE_HOMECAGE",axes
+     - F-left
+     - :py:func:`~plots.plot_fr.plot_corr_fr_delta`
+     - df_firing_rates,df_delta_es,stru,ax[:,2]
    * - |fignum|
-     - G
-     - :py:func:`~plots.plot_fr.corr_rem_nrem_fr`
-     - df,"BLA","WAKE_HOMECAGE",axes
-
+     - F-Right
+     - :py:func:`~plots.plot_fr.plot_boxplot_delta_quintiles`
+     - df,'delta_REM','BLA',ax = ax[2,3]
 
 Figures
 --------
@@ -125,8 +124,6 @@ rates. (Signrank test against 0, Bonferonni correction) N > 200 neurons in each 
 and REM sleep. Correlation with time spent in NREM or REM ( r = −0.15, p = 4.05 × :math:`10^{−13}` ; r = −0.06, p = 0.17 ). Correlation
 with wake firing rates and delta during NREM or REM ( r = −0.17, p = 2.44 ×  :math:`10^{-7}` ; r = −0.04, p = 0.21 ). Neurons that fire the
 most during wake are the one that decrease the most during NREM sleep.
-
-
 
 
 .. |fignum| replace:: 4
